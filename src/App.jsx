@@ -164,7 +164,6 @@ function MainApp({ session, userProfile, refreshProfile }) {
 
     try {
       // 1. CLEAN THE DATA 
-      
       const safeQty = parseInt(newItem.qty) || 0
       const safeThreshold = parseInt(newItem.threshold) || 5
       
