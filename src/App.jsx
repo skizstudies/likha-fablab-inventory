@@ -804,9 +804,9 @@ function MainApp({ session, userProfile, refreshProfile }) {
                 <input name="srCode" placeholder="SR Code (e.g. 21-00000)" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
                 
                 <select name="userType" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="Student">Student (View Only)</option>
-                  <option value="Intern">Intern (Can Edit)</option>
-                  <option value="Admin">Admin (Full Access)</option>
+                  <option value="Student Volunteer">Student Volunteer</option>
+                  <option value="Intern">Intern</option>
+                  <option value="Admin">Admin</option>
                 </select>
 
                 <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
