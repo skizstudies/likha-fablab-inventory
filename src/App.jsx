@@ -309,7 +309,7 @@ return (
     <div className="flex h-screen bg-red-900 p-4 gap-4 overflow-hidden font-sans">
       
       {/* 2. FLOATING SIDEBAR (White Pill) */}
-      <aside className="w-64 bg-white rounded-[2rem] shadow-2xl flex flex-col py-6 hidden md:flex z-20">
+      <aside className="w-64 bg-white rounded-[2rem] shadow-2xl flex flex-col py-6 md:flex z-20">
         
         {/* Logo Area */}
         <div className="px-8 mb-10 flex items-center gap-3">
