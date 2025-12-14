@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { 
   Plus, Trash2, LogOut, User, LayoutGrid, Search, X, 
-  ChevronRight, Edit3, Save, MoreVertical, Settings, AlertTriangle 
+  ChevronRight, Edit3, Save, MoreVertical, Settings, AlertTriangle, ArrowLeft,
+  Camera, Loader2 
 } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
@@ -325,8 +326,13 @@ function MainApp({ session, userProfile, refreshProfile }) {
               <div className="text-sm font-bold text-slate-700">{userProfile?.first_name}</div>
               <div className="text-xs text-slate-500 uppercase">{userProfile?.user_type}</div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
-              {userProfile?.first_name?.[0] || <User size={18}/>}
+            {/* Replace the old circle div with this one: */}
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm overflow-hidden">
+              {userProfile?.avatar_url ? (
+                <img src={userProfile.avatar_url} className="w-full h-full object-cover" />
+              ) : (
+                userProfile?.first_name?.[0] || <User size={18}/>
+              )}
             </div>
           </button>
           
@@ -579,16 +585,116 @@ function MainApp({ session, userProfile, refreshProfile }) {
 
         {/* VIEW: PROFILE SETTINGS */}
         {view === 'profile' && userProfile && (
-           <div className="flex-1 p-8 flex justify-center bg-slate-100">
-             <div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-sm border border-slate-200 h-fit">
-               <h2 className="text-2xl font-bold mb-6 text-slate-900">Edit Profile</h2>
-               <div className="space-y-4">
-                 <div><label className="text-xs font-bold text-slate-500 uppercase">First Name</label><input className="w-full p-3 border rounded bg-slate-50" defaultValue={userProfile.first_name} /></div>
-                 <div><label className="text-xs font-bold text-slate-500 uppercase">Last Name</label><input className="w-full p-3 border rounded bg-slate-50" defaultValue={userProfile.last_name} /></div>
-                 <button className="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700">Save Changes</button>
-               </div>
-             </div>
-           </div>
+          <div className="flex-1 p-8 flex justify-center bg-slate-100 overflow-y-auto pb-20">
+            <div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-sm border border-slate-200 h-fit animate-fade-in my-auto">
+              
+              <button 
+                onClick={() => setView('inventory')} 
+                className="group flex items-center gap-2 text-slate-400 hover:text-blue-600 mb-8 transition-colors font-bold text-sm"
+              >
+                <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-1" /> 
+                Back to Dashboard
+              </button>
+
+              <h2 className="text-2xl font-bold mb-8 text-slate-900 text-center">Edit Profile</h2>
+              
+              {/* --- AVATAR UPLOADER --- */}
+              <div className="flex justify-center mb-8">
+                <div className="relative group cursor-pointer">
+                    {/* 1. The Image Display */}
+                    <div className="w-32 h-32 rounded-full border-4 border-slate-100 shadow-sm overflow-hidden bg-slate-100 flex items-center justify-center">
+                      {userProfile.avatar_url ? (
+                        <img src={`${userProfile.avatar_url}?t=${new Date().getTime()}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={48} className="text-slate-300"/>
+                      )}
+                    </div>
+
+                    {/* 2. The Upload Overlay Button */}
+                    <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition cursor-pointer">
+                      {isSaving ? <Loader2 size={18} className="animate-spin"/> : <Camera size={18}/>}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        disabled={isSaving}
+                        onChange={async (e) => {
+                          if (!e.target.files || e.target.files.length === 0) return
+                          
+                          setIsSaving(true)
+                          const file = e.target.files[0]
+                          const fileExt = file.name.split('.').pop()
+                          const fileName = `${session.user.id}-${Math.random()}.${fileExt}`
+                          const filePath = `${fileName}`
+
+                          try {
+                            // A. Upload to Supabase Storage
+                            const { error: uploadError } = await supabase.storage
+                              .from('avatars')
+                              .upload(filePath, file)
+
+                            if (uploadError) throw uploadError
+
+                            // B. Get the Public URL
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('avatars')
+                              .getPublicUrl(filePath)
+
+                            // C. Update Profile Database
+                            const { error: dbError } = await supabase
+                              .from('profiles')
+                              .update({ avatar_url: publicUrl })
+                              .eq('id', session.user.id)
+
+                            if (dbError) throw dbError
+
+                            // D. Refresh UI
+                            await refreshProfile()
+                            alert("Profile picture updated!")
+                            
+                          } catch (error) {
+                            alert("Error uploading image: " + error.message)
+                          } finally {
+                            setIsSaving(false)
+                          }
+                        }} 
+                      />
+                    </label>
+                </div>
+              </div>
+
+              {/* --- TEXT FORM --- */}
+              <form onSubmit={async (e) => {
+                  e.preventDefault()
+                  const formData = new FormData(e.target)
+                  
+                  const { error } = await supabase.from('profiles').update({
+                    first_name: formData.get('firstName'),
+                    last_name: formData.get('lastName'),
+                  }).eq('id', session.user.id)
+                  
+                  if (!error) {
+                    alert("Profile Updated Successfully!")
+                    refreshProfile()
+                  }
+              }} className="space-y-4">
+                
+                <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">First Name</label>
+                    <input name="firstName" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 transition" defaultValue={userProfile.first_name} />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Last Name</label>
+                    <input name="lastName" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 transition" defaultValue={userProfile.last_name} />
+                </div>
+                
+                <div className="pt-4">
+                    <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition">Save Changes</button>
+                </div>
+              </form>
+
+            </div>
+          </div>
         )}
 
         {/* MODAL: ADD ITEM */}
