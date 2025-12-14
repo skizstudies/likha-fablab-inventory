@@ -267,7 +267,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
       change_amount: amount, 
       action_type: type, 
       user_email: session.user.email,
-      user_id: session.user.id // <--- THIS IS NEW
+      user_id: session.user.id 
     }])
 
     if (error) console.error("Log Error:", error)
