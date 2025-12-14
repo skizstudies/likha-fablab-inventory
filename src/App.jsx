@@ -70,33 +70,29 @@ function AuthScreen() {
     setLoading(false)
   }
 
+  // Inside AuthScreen function...
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 font-sans">
       <form onSubmit={handleAuth} className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
         <h1 className="text-3xl font-bold text-center text-blue-900 mb-2">LIKHA FabLab</h1>
         <p className="text-slate-500 text-center mb-6 text-sm uppercase tracking-wide">Inventory System</p>
+        
         <div className="space-y-3">
-          {isRegister && (
-            <div className="grid grid-cols-2 gap-2">
-              <input required placeholder="First Name" className="p-3 border rounded-lg bg-slate-50" onChange={e => setFirstName(e.target.value)} />
-              <input required placeholder="Last Name" className="p-3 border rounded-lg bg-slate-50" onChange={e => setLastName(e.target.value)} />
-              <input placeholder="SR Code" className="p-3 border rounded-lg bg-slate-50 col-span-2" onChange={e => setSrCode(e.target.value)} />
-              <select className="p-3 border rounded-lg bg-slate-50 col-span-2" value={userType} onChange={e => setUserType(e.target.value)}>
-                <option value="Student">Student (View Only)</option>
-                <option value="Intern">Intern</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-          )}
-          <input required type="email" placeholder="Email" className="w-full p-3 border rounded-lg" value={email} onChange={e => setEmail(e.target.value)} />
-          <input required type="password" placeholder="Password" className="w-full p-3 border rounded-lg" value={password} onChange={e => setPassword(e.target.value)} />
+          {/* Simple Email & Password for everyone */}
+          <input required type="email" placeholder="Email" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={email} onChange={e => setEmail(e.target.value)} />
+          <input required type="password" placeholder="Password" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={password} onChange={e => setPassword(e.target.value)} />
+          
           {msg && <div className="p-3 bg-blue-50 text-blue-700 text-sm rounded text-center">{msg}</div>}
+
           <button disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">
-            {loading ? 'Processing...' : (isRegister ? 'Create Account' : 'Log In')}
+            {loading ? 'Processing...' : (isRegister ? 'Sign Up' : 'Log In')}
           </button>
-          <button type="button" onClick={() => setIsRegister(!isRegister)} className="w-full text-center text-sm text-slate-500 hover:text-blue-600 mt-2">
-            {isRegister ? "Already have an account? Login" : "New here? Create Account"}
-          </button>
+          
+          <div className="text-center mt-4">
+            <button type="button" onClick={() => setIsRegister(!isRegister)} className="text-sm text-slate-500 hover:text-blue-600 underline">
+              {isRegister ? "Already have an account? Login" : "New here? Create Account"}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -113,11 +109,22 @@ function MainApp({ session, userProfile, refreshProfile }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false) // Dropdown state
   const [isEditing, setIsEditing] = useState(false) // Side panel edit state
+  const [isOnboarding, setIsOnboarding] = useState(false)
   
   // New Item State
   const [newItem, setNewItem] = useState({ name: '', cat: 'Consumable', qty: 0, loc: '', desc: '', color: '#3b82f6', tags: '', threshold: 5, img: '' })
 
   useEffect(() => { fetchData() }, [])
+
+  // 3. Onboarding Check Effect (The one we updated)
+  useEffect(() => {
+    // Safe check: If profile exists, AND (name is missing OR name is "New User")
+    if (userProfile && (!userProfile.first_name || userProfile.first_name === 'New User')) {
+      setIsOnboarding(true)
+    } else {
+      setIsOnboarding(false)
+    }
+  }, [userProfile])
 
   async function fetchData() {
     console.log("Fetching data...") // Check console to see if this runs
@@ -594,6 +601,55 @@ function MainApp({ session, userProfile, refreshProfile }) {
                   </div>
                 </div>
                 <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 mt-4 shadow-lg shadow-blue-200">Save to Inventory</button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ONBOARDING MODAL (Cannot be closed until saved) */}
+        {isOnboarding && (
+          <div className="fixed inset-0 bg-slate-900/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl animate-scale-in">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <User size={32} />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">Welcome to LIKHA!</h2>
+                <p className="text-slate-500">Please complete your profile to continue.</p>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                const formData = new FormData(e.target)
+                
+                const { error } = await supabase.from('profiles').update({
+                  first_name: formData.get('firstName'),
+                  last_name: formData.get('lastName'),
+                  sr_code: formData.get('srCode'),
+                  user_type: formData.get('userType')
+                }).eq('id', session.user.id)
+
+                if (!error) {
+                  refreshProfile() // Reloads profile to close modal
+                }
+              }} className="space-y-4">
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <input required name="firstName" placeholder="First Name" className="p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <input required name="lastName" placeholder="Last Name" className="p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                
+                <input name="srCode" placeholder="SR Code (e.g. 21-00000)" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                
+                <select name="userType" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="Student">Student (View Only)</option>
+                  <option value="Intern">Intern (Can Edit)</option>
+                  <option value="Admin">Admin (Full Access)</option>
+                </select>
+
+                <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                  Complete Setup
+                </button>
               </form>
             </div>
           </div>
