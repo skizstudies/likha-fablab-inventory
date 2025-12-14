@@ -142,13 +142,14 @@ function MainApp({ session, userProfile, refreshProfile }) {
       setItems(inv)
     }
 
-    // 2. GET LOGS (Safe Mode - No Profile Join yet)
+    // 2. GET LOGS (Now with Profiles!)
     const { data: lg, error: logError } = await supabase
       .from('transaction_log')
       .select(`
         *,
-        inventory ( item_name ) 
-      `)
+        inventory ( item_name ),
+        profiles ( first_name, last_name ) 
+      `) // <--- We now fetch the Profile Name too
       .order('timestamp', { ascending: false })
       
     if (logError) {
@@ -264,21 +265,16 @@ function MainApp({ session, userProfile, refreshProfile }) {
   }
 
   async function logTransaction(itemId, amount, type) {
-    console.log("Attempting to log:", { itemId, amount, type, user: session.user.email })
-    
-    const { data, error } = await supabase.from('transaction_log').insert([{
+    // We now save the user_id (for the Name) AND user_email (as backup)
+    const { error } = await supabase.from('transaction_log').insert([{
       item_id: itemId, 
       change_amount: amount, 
       action_type: type, 
-      user_email: session.user.email
-    }]).select()
+      user_email: session.user.email,
+      user_id: session.user.id // <--- THIS IS NEW
+    }])
 
-    if (error) {
-      console.error("LOGGING ERROR:", error.message)
-      alert("Error saving log: " + error.message)
-    } else {
-      console.log("Log saved successfully:", data)
-    }
+    if (error) console.error("Log Error:", error)
   }
 
   // --- CHART DATA PREP ---
@@ -564,7 +560,12 @@ function MainApp({ session, userProfile, refreshProfile }) {
                     {logs.map(log => (
                       <tr key={log.id} className="border-b last:border-0 hover:bg-slate-50">
                         <td className="p-4 text-sm text-slate-500">{new Date(log.timestamp).toLocaleDateString()}</td>
-                        <td className="p-4 font-bold text-slate-700">{log.profiles?.first_name || log.user_email}</td>
+                        <td className="p-4 font-bold text-slate-700">
+                          {log.profiles 
+                            ? `${log.profiles.first_name} ${log.profiles.last_name}` 
+                            : log.user_email // Fallback for old logs
+                          }
+                        </td>
                         <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${log.change_amount > 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{log.action_type} {log.change_amount > 0 ? '+' : ''}{log.change_amount}</span></td>
                         <td className="p-4 text-sm font-medium">{log.inventory?.item_name}</td>
                       </tr>
