@@ -1,276 +1,601 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Plus, Trash2, Box, LogOut, User, History, AlertTriangle, LayoutGrid, ClipboardList } from 'lucide-react'
+import { 
+  Plus, Trash2, LogOut, User, LayoutGrid, Search, X, 
+  ChevronRight, Edit3, Save, MoreVertical, Settings, AlertTriangle 
+} from 'lucide-react'
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
+  Legend, ResponsiveContainer, PieChart, Pie, Cell 
+} from 'recharts'
 
 // --- CONFIGURATION ---
-// Connects to Supabase using the secure keys in your .env file
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY)
+const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function App() {
   const [session, setSession] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)
 
-  // Manage Session (Keep user logged in)
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session))
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      if (session) fetchProfile(session.user.id)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      if (session) fetchProfile(session.user.id)
+    })
     return () => subscription.unsubscribe()
   }, [])
 
-  // If not logged in, show Login Screen. Otherwise, show Dashboard.
+  async function fetchProfile(uid) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', uid).single()
+    setUserProfile(data)
+  }
+
   if (!session) return <AuthScreen />
-  return <Dashboard session={session} />
+  return <MainApp session={session} userProfile={userProfile} refreshProfile={() => fetchProfile(session.user.id)} />
 }
 
-// --- SCREEN 1: LOGIN / SIGNUP ---
+// --- AUTH SCREEN ---
 function AuthScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [isRegister, setIsRegister] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [srCode, setSrCode] = useState('')
+  const [userType, setUserType] = useState('Student')
 
-  const handleAuth = async (type) => {
+  const handleAuth = async (e) => {
+    e.preventDefault()
     setLoading(true)
-    setMsg('') // Clear previous messages
-    
-    const { error } = type === 'login' 
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password }) 
-    
-    if (error) {
-      setMsg(error.message)
-    } else if (type === 'signup') {
-      // SECURITY FEATURE: Instructions for email verification
-      setMsg("Success! Please check your email inbox to verify your account.")
+    setMsg('')
+    if (isRegister) {
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) { setMsg(error.message); setLoading(false); return }
+      if (data?.user) {
+        await supabase.from('profiles').update({
+          first_name: firstName, last_name: lastName, sr_code: srCode, user_type: userType
+        }).eq('id', data.user.id)
+        setMsg("Account created! Check email to verify.")
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) setMsg(error.message)
     }
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 font-sans p-4">
-      <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-md border border-slate-200">
-        <div className="flex justify-center mb-4">
-          <div className="bg-blue-600 p-3 rounded-full text-white">
-            <LayoutGrid size={32} />
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 font-sans">
+      <form onSubmit={handleAuth} className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
+        <h1 className="text-3xl font-bold text-center text-blue-900 mb-2">LIKHA FabLab</h1>
+        <p className="text-slate-500 text-center mb-6 text-sm uppercase tracking-wide">Inventory System</p>
+        <div className="space-y-3">
+          {isRegister && (
+            <div className="grid grid-cols-2 gap-2">
+              <input required placeholder="First Name" className="p-3 border rounded-lg bg-slate-50" onChange={e => setFirstName(e.target.value)} />
+              <input required placeholder="Last Name" className="p-3 border rounded-lg bg-slate-50" onChange={e => setLastName(e.target.value)} />
+              <input placeholder="SR Code" className="p-3 border rounded-lg bg-slate-50 col-span-2" onChange={e => setSrCode(e.target.value)} />
+              <select className="p-3 border rounded-lg bg-slate-50 col-span-2" value={userType} onChange={e => setUserType(e.target.value)}>
+                <option value="Student">Student (View Only)</option>
+                <option value="Intern">Intern</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+          )}
+          <input required type="email" placeholder="Email" className="w-full p-3 border rounded-lg" value={email} onChange={e => setEmail(e.target.value)} />
+          <input required type="password" placeholder="Password" className="w-full p-3 border rounded-lg" value={password} onChange={e => setPassword(e.target.value)} />
+          {msg && <div className="p-3 bg-blue-50 text-blue-700 text-sm rounded text-center">{msg}</div>}
+          <button disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+            {loading ? 'Processing...' : (isRegister ? 'Create Account' : 'Log In')}
+          </button>
+          <button type="button" onClick={() => setIsRegister(!isRegister)} className="w-full text-center text-sm text-slate-500 hover:text-blue-600 mt-2">
+            {isRegister ? "Already have an account? Login" : "New here? Create Account"}
+          </button>
         </div>
-        <h1 className="text-3xl font-bold text-center text-blue-900 mb-1">LIKHA FabLab</h1>
-        <p className="text-slate-500 text-center mb-8 text-sm">Inventory Management System</p>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="engineer@fablab.edu" />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase">Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••" />
-          </div>
-          
-          {msg && <p className={`text-sm text-center p-3 rounded border font-medium ${msg.includes('Success') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{msg}</p>}
-          
-          <div className="flex gap-3 pt-2">
-            <button onClick={() => handleAuth('login')} disabled={loading} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm">
-              {loading ? '...' : 'Login'}
-            </button>
-            <button onClick={() => handleAuth('signup')} disabled={loading} className="flex-1 bg-white text-slate-700 border border-slate-300 py-3 rounded-lg font-semibold hover:bg-slate-50 transition">
-              Sign Up
-            </button>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
   )
 }
 
-// --- SCREEN 2: MAIN DASHBOARD ---
-function Dashboard({ session }) {
+// --- MAIN APP ---
+function MainApp({ session, userProfile, refreshProfile }) {
+  const [view, setView] = useState('inventory') 
   const [items, setItems] = useState([])
   const [logs, setLogs] = useState([])
-  const [newItem, setNewItem] = useState({ name: '', qty: 0, cat: 'Consumable', loc: '' })
-  const [view, setView] = useState('inventory') 
+  const [search, setSearch] = useState('')
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false) // Dropdown state
+  const [isEditing, setIsEditing] = useState(false) // Side panel edit state
+  
+  // New Item State
+  const [newItem, setNewItem] = useState({ name: '', cat: 'Consumable', qty: 0, loc: '', desc: '', color: '#3b82f6', tags: '', threshold: 5, img: '' })
 
-  // Load Data on Start
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   async function fetchData() {
-    // 1. Get Inventory
-    const { data: inv } = await supabase.from('inventory').select('*').order('id')
-    if (inv) setItems(inv)
+    console.log("Fetching data...") // Check console to see if this runs
 
-    // 2. Get Logs (Relational Data for Reports) [cite: 17]
-    const { data: lg } = await supabase.from('transaction_log')
-      .select('*, inventory(item_name)') 
-      .order('timestamp', { ascending: false })
-      .limit(50)
-    if (lg) setLogs(lg)
-  }
-
-  // --- CRUD OPERATIONS [cite: 16] ---
-
-  // CREATE: Add new item + Log it
-  async function addItem(e) {
-    e.preventDefault()
-    if (!newItem.name) return
+    // 1. GET INVENTORY (Isolated - so it always works)
+    const { data: inv, error: invError } = await supabase
+      .from('inventory')
+      .select('*')
+      .order('item_name')
     
-    const { data, error } = await supabase.from('inventory').insert([{ 
-      item_name: newItem.name, quantity: newItem.qty, category: newItem.cat, location: newItem.loc 
-    }]).select()
+    if (invError) {
+      console.error("Inventory Error:", invError)
+    } else {
+      setItems(inv)
+    }
 
-    if (!error && data) {
-      await logTransaction(data[0].id, newItem.qty, 'Initial Stock')
-      setNewItem({ name: '', qty: 0, cat: 'Consumable', loc: '' })
-      fetchData()
+    // 2. GET LOGS (Safe Mode - No Profile Join yet)
+    const { data: lg, error: logError } = await supabase
+      .from('transaction_log')
+      .select(`
+        *,
+        inventory ( item_name ) 
+      `)
+      .order('timestamp', { ascending: false })
+      
+    if (logError) {
+      console.error("Log Error:", logError)
+    } else {
+      setLogs(lg)
     }
   }
 
-  // UPDATE: Change stock + Log it
-  async function updateStock(id, currentQty, change) {
-    const newQty = Math.max(0, currentQty + change)
-    await supabase.from('inventory').update({ quantity: newQty }).eq('id', id)
-    await logTransaction(id, change, change > 0 ? 'Restock' : 'Usage')
+  // --- ACTIONS ---
+  async function handleAddItem(e) {
+    e.preventDefault()
+    // Convert comma tags to array
+    const tagArray = newItem.tags.split(',').map(t => t.trim())
+    
+    const { data, error } = await supabase.from('inventory').insert([{ 
+      item_name: newItem.name, 
+      category: newItem.cat, 
+      quantity: newItem.qty, 
+      location: newItem.loc,
+      description: newItem.desc, 
+      color_code: newItem.color, 
+      tags: tagArray, 
+      threshold: newItem.threshold, 
+      image_url: newItem.img
+    }]).select()
+
+    if (!error) {
+      // 1. Log the initial stock
+      await logTransaction(data[0].id, newItem.qty, 'Initial Stock')
+      
+      // 2. Close the modal
+      setIsModalOpen(false)
+      
+      // 3. REFRESH the table
+      fetchData()
+
+      // 4. RESET THE FORM (The Magic Line) ✨
+      setNewItem({ 
+        name: '', cat: 'Consumable', qty: 0, loc: '', 
+        desc: '', color: '#3b82f6', tags: '', threshold: 5, img: '' 
+      })
+    }
+  }
+
+  async function handleUpdateItem() {
+    // 1. Find the original item to compare values (Before the edit)
+    const originalItem = items.find(i => i.id === selectedItem.id)
+    if (!originalItem) return
+
+    // 2. Calculate the difference for the Log
+    const stockDifference = selectedItem.quantity - originalItem.quantity
+
+    // 3. Update the Item in Database (Everything: Stock, Name, Desc, etc.)
+    const { error } = await supabase.from('inventory').update({
+      item_name: selectedItem.item_name,
+      category: selectedItem.category,
+      quantity: selectedItem.quantity, // Save the new quantity here
+      location: selectedItem.location,
+      description: selectedItem.description,
+      threshold: selectedItem.threshold
+    }).eq('id', selectedItem.id)
+    
+    // 4. If Stock changed, Save the Log
+    if (!error && stockDifference !== 0) {
+      const type = stockDifference > 0 ? 'Restock' : 'Usage'
+      await logTransaction(selectedItem.id, stockDifference, type)
+    }
+
+    if (!error) {
+      setIsEditing(false)
+      fetchData() // Refresh the table
+    }
+  }
+
+  async function handleDeleteItem(id) {
+    if(!confirm("Are you sure you want to delete this item?")) return;
+    await supabase.from('inventory').delete().eq('id', id)
+    setSelectedItem(null)
     fetchData()
   }
 
-  // DELETE: Remove item
-  async function deleteItem(id) {
-    if (confirm('Are you sure? This will delete the item and its history.')) {
-      await supabase.from('inventory').delete().eq('id', id)
-      fetchData()
+  async function handleStockChange(id, currentQty, newQty) {
+    const change = newQty - currentQty
+    if (change === 0) return
+    
+    // 1. Update Inventory
+    await supabase.from('inventory').update({ quantity: newQty }).eq('id', id)
+    
+    // 2. Log Transaction
+    await logTransaction(id, change, change > 0 ? 'Restock' : 'Usage')
+    
+    // 3. Update UI
+    fetchData()
+    if (selectedItem?.id === id) setSelectedItem(prev => ({...prev, quantity: newQty}))
+  }
+
+  async function logTransaction(itemId, amount, type) {
+    console.log("Attempting to log:", { itemId, amount, type, user: session.user.email })
+    
+    const { data, error } = await supabase.from('transaction_log').insert([{
+      item_id: itemId, 
+      change_amount: amount, 
+      action_type: type, 
+      user_email: session.user.email
+    }]).select()
+
+    if (error) {
+      console.error("LOGGING ERROR:", error.message)
+      alert("Error saving log: " + error.message)
+    } else {
+      console.log("Log saved successfully:", data)
     }
   }
 
-  // HELPER: Add entry to Transaction Log Table
-  async function logTransaction(itemId, amount, type) {
-    await supabase.from('transaction_log').insert([{
-      item_id: itemId, change_amount: amount, action_type: type, user_email: session.user.email
-    }])
-  }
+  // --- CHART DATA PREP ---
+  // Bar Chart: Stock Status (Red, Yellow, Green)
+  const stockStatusData = [
+    { name: 'In Stock', value: items.filter(i => i.quantity > i.threshold).length, fill: '#10b981' },
+    { name: 'Low Stock', value: items.filter(i => i.quantity <= i.threshold && i.quantity > 0).length, fill: '#f59e0b' },
+    { name: 'Out of Stock', value: items.filter(i => i.quantity === 0).length, fill: '#ef4444' },
+  ]
+
+  // Pie Chart: Usage Frequency (Top 5 Items Used)
+  const usageData = logs
+    .filter(l => l.action_type === 'Usage')
+    .reduce((acc, log) => {
+      const name = log.inventory?.item_name || 'Unknown'
+      const existing = acc.find(x => x.name === name)
+      if (existing) existing.value += Math.abs(log.change_amount)
+      else acc.push({ name, value: Math.abs(log.change_amount) })
+      return acc
+    }, [])
+    .sort((a,b) => b.value - a.value)
+    .slice(0, 5)
+
+  const filteredItems = items.filter(item => 
+    item.item_name.toLowerCase().includes(search.toLowerCase()) || 
+    item.category.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-900 flex items-center gap-2">
-              <LayoutGrid className="text-blue-600"/> LIKHA Inventory
-            </h1>
-            <p className="text-slate-500 text-sm flex items-center gap-2 mt-1">
-              <User size={14}/> Logged in as: <span className="font-medium text-slate-700">{session.user.email}</span>
-            </p>
-          </div>
-          <div className="flex gap-3 mt-4 md:mt-0">
-            <button onClick={() => setView('inventory')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${view === 'inventory' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-              <Box size={18}/> Inventory
-            </button>
-            <button onClick={() => setView('reports')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${view === 'reports' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-              <ClipboardList size={18}/> Reports & Logs
-            </button>
-            <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition border border-red-100">
-              <LogOut size={18}/> Sign Out
-            </button>
-          </div>
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-800 flex flex-col h-screen overflow-hidden">
+      
+      {/* NAVBAR */}
+      <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm z-20">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-2 rounded-lg text-white"><LayoutGrid size={24}/></div>
+          <div><h1 className="text-xl font-bold text-slate-900 leading-none">LIKHA FabLab</h1></div>
         </div>
 
-        {/* VIEW 1: INVENTORY MANAGEMENT */}
-        {view === 'inventory' ? (
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+          <button onClick={() => {setView('inventory'); setSelectedItem(null)}} className={`px-6 py-2 rounded-md text-sm font-bold transition ${view === 'inventory' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>Inventory</button>
+          <button onClick={() => {setView('reports'); setSelectedItem(null)}} className={`px-6 py-2 rounded-md text-sm font-bold transition ${view === 'reports' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>Reports</button>
+        </div>
+
+        {/* PROFILE DROPDOWN */}
+        <div className="relative">
+          <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-3 hover:bg-slate-50 p-2 rounded-lg transition">
+            <div className="text-right hidden md:block">
+              <div className="text-sm font-bold text-slate-700">{userProfile?.first_name}</div>
+              <div className="text-xs text-slate-500 uppercase">{userProfile?.user_type}</div>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
+              {userProfile?.first_name?.[0] || <User size={18}/>}
+            </div>
+          </button>
+          
+          {isProfileOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 animate-fade-in z-50">
+              <div className="px-4 py-2 border-b border-slate-50 mb-1">
+                <p className="text-xs font-bold text-slate-400 uppercase">Signed in as</p>
+                <p className="text-sm font-bold text-slate-700 truncate">{session.user.email}</p>
+              </div>
+              <button onClick={() => {setView('profile'); setIsProfileOpen(false)}} className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"><Settings size={16}/> Profile Settings</button>
+              <button onClick={() => supabase.auth.signOut()} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16}/> Sign Out</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="flex-1 overflow-hidden relative flex bg-slate-100">
+        
+        {view === 'inventory' && (
           <>
-            {/* ADD FORM */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
-              <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700"><Plus size={20}/> Add New Material</h3>
-              <form onSubmit={addItem} className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-4">
-                  <input value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Item Name (e.g. PLA Filament)" />
+            <div className={`flex-1 p-6 md:p-12 overflow-y-auto transition-all duration-300 ${selectedItem ? 'mr-[450px]' : ''}`}>
+              <div className="max-w-7xl mx-auto">
+                {/* TOOLBAR */}
+                <div className="flex justify-between items-center mb-6">
+                  <div className="relative w-96">
+                    <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                    <input className="w-full pl-12 pr-4 py-3 rounded-xl border-none focus:ring-2 focus:ring-blue-500 shadow-sm bg-white" 
+                      placeholder="Search inventory..." value={search} onChange={e => setSearch(e.target.value)} />
+                  </div>
+                  <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition">
+                    <Plus size={20} /> Add Item
+                  </button>
                 </div>
-                <div className="md:col-span-3">
-                  <select value={newItem.cat} onChange={e => setNewItem({...newItem, cat: e.target.value})} className="w-full p-2 border rounded bg-white focus:border-blue-500 outline-none">
-                    <option>Consumable</option><option>Tool</option><option>Equipment</option>
-                  </select>
+
+                {/* TABLE */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase text-xs tracking-wider">
+                      <tr>
+                        <th className="p-4 text-left font-bold">Item Name</th>
+                        <th className="p-4 text-center font-bold">Category</th>
+                        <th className="p-4 text-center font-bold">Stock Quantity</th>
+                        <th className="p-4 text-center font-bold">Location</th>
+                        <th className="p-4 text-center font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredItems.map(item => {
+                        const isLow = item.quantity <= item.threshold
+                        return (
+                          <tr key={item.id} onClick={() => {setSelectedItem(item); setIsEditing(false)}} 
+                            className={`cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50 transition group ${isLow ? 'bg-red-50 hover:bg-red-100' : ''}`}>
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-2 h-8 rounded-full" style={{backgroundColor: item.color_code}}></div>
+                                <div>
+                                  <div className="font-bold text-slate-800">{item.item_name}</div>
+                                  {isLow && <div className="text-[10px] text-red-500 font-bold uppercase tracking-wide flex items-center gap-1"><AlertTriangle size={10}/> Low Stock</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4 text-center"><span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600">{item.category}</span></td>
+                            <td className="p-4 text-center">
+                              <span className={`font-mono font-bold text-lg ${item.quantity === 0 ? 'text-red-500' : 'text-slate-700'}`}>{item.quantity}</span>
+                            </td>
+                            <td className="p-4 text-center text-sm text-slate-500">{item.location}</td>
+                            <td className="p-4 text-center">
+                              <button onClick={(e) => {e.stopPropagation(); handleDeleteItem(item.id)}} className="p-2 text-slate-300 hover:text-red-500 transition"><Trash2 size={18}/></button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  {filteredItems.length === 0 && <div className="p-12 text-center text-slate-400">No items found matching your search.</div>}
                 </div>
-                <div className="md:col-span-2">
-                  <input type="number" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: parseInt(e.target.value)})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Qty" />
-                </div>
-                <div className="md:col-span-2">
-                   <input value={newItem.loc} onChange={e => setNewItem({...newItem, loc: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Location" />
-                </div>
-                <div className="md:col-span-1">
-                  <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-medium h-full flex items-center justify-center"><Plus/></button>
-                </div>
-              </form>
+              </div>
             </div>
 
-            {/* INVENTORY TABLE */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b">
-                  <tr>
-                    <th className="p-4 font-semibold text-slate-600 text-sm">Item Name</th>
-                    <th className="p-4 font-semibold text-slate-600 text-sm">Category</th>
-                    <th className="p-4 font-semibold text-slate-600 text-sm">Location</th>
-                    <th className="p-4 font-semibold text-slate-600 text-sm">Stock Level</th>
-                    <th className="p-4 font-semibold text-slate-600 text-sm text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(item => (
-                    <tr key={item.id} className="border-b last:border-0 hover:bg-slate-50 transition">
-                      <td className="p-4 font-medium text-slate-800">{item.item_name}</td>
-                      <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold uppercase ${item.category === 'Consumable' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'}`}>{item.category}</span></td>
-                      <td className="p-4 text-sm text-slate-500">{item.location || '-'}</td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <button onClick={() => updateStock(item.id, item.quantity, -1)} className="w-8 h-8 rounded bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">-</button>
-                          <span className={`font-bold w-8 text-center ${item.quantity < item.min_stock_level ? 'text-red-500' : 'text-slate-700'}`}>{item.quantity}</span>
-                          <button onClick={() => updateStock(item.id, item.quantity, 1)} className="w-8 h-8 rounded bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">+</button>
-                          {item.quantity < item.min_stock_level && <AlertTriangle size={16} className="text-red-500 animate-pulse" title="Low Stock Alert" />}
+            {/* SIDE DETAILS PANEL (Slide Over) */}
+            <div className={`fixed top-[88px] right-0 bottom-0 w-[450px] bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 z-30 overflow-y-auto ${selectedItem ? 'translate-x-0' : 'translate-x-full'}`}>
+              {selectedItem && (
+                <div className="p-8 h-full flex flex-col">
+                  <div className="flex justify-between items-start mb-6">
+                    <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-600"><ChevronRight size={24}/></button>
+                    <div className="flex gap-2">
+                       {isEditing ? (
+                         <button onClick={handleUpdateItem} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700"><Save size={16}/> Save</button>
+                       ) : (
+                         <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200"><Edit3 size={16}/> Edit</button>
+                       )}
+                    </div>
+                  </div>
+                  
+                  {selectedItem.image_url ? (
+                     <img src={selectedItem.image_url} className="w-full h-56 object-cover rounded-xl mb-6 shadow-sm bg-slate-50" />
+                  ) : (
+                    <div className="w-full h-32 bg-slate-100 rounded-xl mb-6 flex items-center justify-center text-slate-400 italic text-sm">No Image Available</div>
+                  )}
+
+                  <div className="flex-1 space-y-6">
+                    <div>
+                      {isEditing ? <input className="text-2xl font-bold w-full border-b border-blue-500 outline-none" value={selectedItem.item_name} onChange={e => setSelectedItem({...selectedItem, item_name: e.target.value})} /> : <h2 className="text-3xl font-bold text-slate-900">{selectedItem.item_name}</h2>}
+                      {isEditing ? (
+                        <select className="mt-2 p-2 border rounded" value={selectedItem.category} onChange={e => setSelectedItem({...selectedItem, category: e.target.value})}>
+                          <option>Consumable</option><option>Tool</option><option>Equipment</option>
+                        </select>
+                      ) : (
+                        <span className="mt-2 inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold uppercase">{selectedItem.category}</span>
+                      )}
+                    </div>
+
+                    <div className="p-5 bg-slate-50 rounded-xl border border-slate-100 transition-all">
+                      <label className="text-xs font-bold text-slate-400 uppercase block mb-3">
+                        {isEditing ? "Adjust Stock Level" : "Current Stock"}
+                      </label>
+                      
+                      {isEditing ? (
+                        <div className="flex items-center gap-3 animate-fade-in">
+                          {/* MINUS BUTTON: Only updates local state */}
+                          <button 
+                            onClick={() => setSelectedItem({...selectedItem, quantity: Math.max(0, selectedItem.quantity - 1)})} 
+                            className="w-12 h-12 bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:text-red-600 font-bold text-slate-600 shadow-sm transition"
+                          >
+                            -
+                          </button>
+                          
+                          {/* INPUT: Only updates local state */}
+                          <input 
+                            type="number" 
+                            value={selectedItem.quantity} 
+                            onChange={(e) => setSelectedItem({...selectedItem, quantity: parseInt(e.target.value) || 0})}
+                            className="flex-1 text-center py-3 border border-slate-200 rounded-xl font-mono font-bold text-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                          />
+                          
+                          {/* PLUS BUTTON: Only updates local state */}
+                          <button 
+                            onClick={() => setSelectedItem({...selectedItem, quantity: selectedItem.quantity + 1})} 
+                            className="w-12 h-12 bg-white border border-slate-200 rounded-xl hover:bg-green-50 hover:text-green-600 font-bold text-slate-600 shadow-sm transition"
+                          >
+                            +
+                          </button>
                         </div>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button onClick={() => deleteItem(item.id)} className="text-slate-400 hover:text-red-500 transition"><Trash2 size={18}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                  {items.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-slate-400">No items found. Add one above!</td></tr>}
-                </tbody>
-              </table>
+                      ) : (
+                        /* ... View Mode stays the same ... */
+                        <div className="flex items-baseline gap-2">
+                            <span className={`text-4xl font-mono font-bold tracking-tight ${selectedItem.quantity <= selectedItem.threshold ? 'text-red-500' : 'text-slate-800'}`}>
+                              {selectedItem.quantity}
+                            </span>
+                            <span className="text-sm font-bold text-slate-400 uppercase">Units Available</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Description</h4>
+                      {isEditing ? <textarea className="w-full p-3 border rounded h-24" value={selectedItem.description} onChange={e => setSelectedItem({...selectedItem, description: e.target.value})} /> : <p className="text-slate-600 text-sm leading-relaxed">{selectedItem.description || "No description."}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                       <div>
+                         <h4 className="text-xs font-bold text-slate-400 uppercase">Location</h4>
+                         {isEditing ? <input className="w-full border-b" value={selectedItem.location} onChange={e => setSelectedItem({...selectedItem, location: e.target.value})}/> : <p className="font-medium text-slate-800">{selectedItem.location}</p>}
+                       </div>
+                       <div>
+                         <h4 className="text-xs font-bold text-slate-400 uppercase">Low Stock Limit</h4>
+                         {isEditing ? <input type="number" className="w-full border-b" value={selectedItem.threshold} onChange={e => setSelectedItem({...selectedItem, threshold: parseInt(e.target.value)})}/> : <p className="font-medium text-red-500">{selectedItem.threshold} items</p>}
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </>
-        ) : (
-          /* VIEW 2: REPORTS & LOGS */
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b bg-slate-50 font-semibold text-slate-700 flex items-center gap-2">
-              <History size={18} className="text-blue-600"/> Transaction History Log
+        )}
+
+        {/* VIEW: REPORTS */}
+        {view === 'reports' && (
+          <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Analytics & Logs</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <h3 className="font-bold text-slate-700 mb-4">Stock Status Overview</h3>
+                  <div className="h-64">
+                     <ResponsiveContainer width="100%" height="100%">
+                       <BarChart data={stockStatusData}>
+                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                         <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                         <YAxis axisLine={false} tickLine={false} />
+                         <ChartTooltip cursor={{fill: 'transparent'}} />
+                         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                           {stockStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                         </Bar>
+                       </BarChart>
+                     </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <h3 className="font-bold text-slate-700 mb-4">Top Used Items (Usage Frequency)</h3>
+                  <div className="h-64">
+                     <ResponsiveContainer width="100%" height="100%">
+                       <PieChart>
+                         <Pie data={usageData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                           {usageData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                         </Pie>
+                         <Legend verticalAlign="bottom" height={36}/>
+                         <ChartTooltip />
+                       </PieChart>
+                     </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
+                <div className="p-4 border-b font-bold text-slate-700">History Logs</div>
+                <table className="w-full text-left">
+                  <thead className="text-xs uppercase text-slate-400 bg-slate-50"><tr><th className="p-4">Date</th><th className="p-4">User</th><th className="p-4">Action</th><th className="p-4">Item</th></tr></thead>
+                  <tbody>
+                    {logs.map(log => (
+                      <tr key={log.id} className="border-b last:border-0 hover:bg-slate-50">
+                        <td className="p-4 text-sm text-slate-500">{new Date(log.timestamp).toLocaleDateString()}</td>
+                        <td className="p-4 font-bold text-slate-700">{log.profiles?.first_name || log.user_email}</td>
+                        <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${log.change_amount > 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{log.action_type} {log.change_amount > 0 ? '+' : ''}{log.change_amount}</span></td>
+                        <td className="p-4 text-sm font-medium">{log.inventory?.item_name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <table className="w-full text-left">
-              <thead className="border-b">
-                <tr>
-                  <th className="p-4 text-sm font-semibold text-slate-500">Timestamp</th>
-                  <th className="p-4 text-sm font-semibold text-slate-500">Item</th>
-                  <th className="p-4 text-sm font-semibold text-slate-500">Action</th>
-                  <th className="p-4 text-sm font-semibold text-slate-500">User</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map(log => (
-                  <tr key={log.id} className="border-b hover:bg-slate-50">
-                    <td className="p-4 text-sm text-slate-600">{new Date(log.timestamp).toLocaleString()}</td>
-                    <td className="p-4 font-medium">{log.inventory?.item_name || 'Unknown Item'}</td>
-                    <td className="p-4 text-sm">
-                      <span className={`flex items-center gap-1 ${log.change_amount > 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                        {log.action_type} 
-                        <span className="font-bold bg-slate-100 px-1 rounded ml-1">
-                          {log.change_amount > 0 ? '+' : ''}{log.change_amount}
-                        </span>
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm text-slate-500 italic">{log.user_email}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          </div>
+        )}
+
+        {/* VIEW: PROFILE SETTINGS */}
+        {view === 'profile' && userProfile && (
+           <div className="flex-1 p-8 flex justify-center bg-slate-100">
+             <div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-sm border border-slate-200 h-fit">
+               <h2 className="text-2xl font-bold mb-6 text-slate-900">Edit Profile</h2>
+               <div className="space-y-4">
+                 <div><label className="text-xs font-bold text-slate-500 uppercase">First Name</label><input className="w-full p-3 border rounded bg-slate-50" defaultValue={userProfile.first_name} /></div>
+                 <div><label className="text-xs font-bold text-slate-500 uppercase">Last Name</label><input className="w-full p-3 border rounded bg-slate-50" defaultValue={userProfile.last_name} /></div>
+                 <button className="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700">Save Changes</button>
+               </div>
+             </div>
+           </div>
+        )}
+
+        {/* MODAL: ADD ITEM */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl animate-scale-in">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Add New Material</h2>
+                <button onClick={() => setIsModalOpen(false)}><X className="text-slate-400 hover:text-slate-600"/></button>
+              </div>
+              <form onSubmit={handleAddItem} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <input required placeholder="Item Name" className="p-3 border rounded-lg col-span-2 focus:ring-2 focus:ring-blue-500 outline-none" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
+                  <select className="p-3 border rounded-lg bg-white" value={newItem.cat} onChange={e => setNewItem({...newItem, cat: e.target.value})}>
+                    <option>Consumable</option><option>Tool</option><option>Equipment</option><option>Miscellaneous</option>
+                  </select>
+                  <input type="number" placeholder="Initial Qty" className="p-3 border rounded-lg" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: parseInt(e.target.value)})} />
+                  <input placeholder="Location" className="p-3 border rounded-lg" value={newItem.loc} onChange={e => setNewItem({...newItem, loc: e.target.value})} />
+                  <input placeholder="Tags (comma separated)" className="p-3 border rounded-lg" value={newItem.tags} onChange={e => setNewItem({...newItem, tags: e.target.value})} />
+                  <div className="col-span-2">
+                    <textarea placeholder="Item Description..." className="w-full p-3 border rounded-lg h-24 focus:ring-2 focus:ring-blue-500 outline-none" value={newItem.desc} onChange={e => setNewItem({...newItem, desc: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Color Code</label>
+                    <div className="flex gap-2">
+                      {COLORS.map(c => (
+                        <div key={c} onClick={() => setNewItem({...newItem, color: c})} className={`w-8 h-8 rounded-full cursor-pointer ring-2 ring-offset-2 ${newItem.color === c ? 'ring-slate-400' : 'ring-transparent'}`} style={{backgroundColor: c}}></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Low Stock Limit</label>
+                    <input type="number" className="w-full p-2 border rounded-lg" value={newItem.threshold} onChange={e => setNewItem({...newItem, threshold: parseInt(e.target.value)})} />
+                  </div>
+                   <div className="col-span-2">
+                    <input placeholder="Image URL (Optional)" className="w-full p-3 border rounded-lg" value={newItem.img} onChange={e => setNewItem({...newItem, img: e.target.value})} />
+                  </div>
+                </div>
+                <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 mt-4 shadow-lg shadow-blue-200">Save to Inventory</button>
+              </form>
+            </div>
           </div>
         )}
       </div>
