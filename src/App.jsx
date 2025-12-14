@@ -414,7 +414,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
             {/* SIDE DETAILS PANEL (Slide Over) */}
             <div className={`fixed top-[88px] right-0 bottom-0 w-[450px] bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 z-30 overflow-y-auto ${selectedItem ? 'translate-x-0' : 'translate-x-full'}`}>
               {selectedItem && (
-                <div className="p-8 h-full flex flex-col">
+                <div className="p-8 min-h-full flex flex-col pb-32">
                   <div className="flex justify-between items-start mb-6">
                     <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-600"><ChevronRight size={24}/></button>
                     <div className="flex gap-2">
@@ -427,9 +427,17 @@ function MainApp({ session, userProfile, refreshProfile }) {
                   </div>
                   
                   {selectedItem.image_url ? (
-                     <img src={selectedItem.image_url} className="w-full h-56 object-cover rounded-xl mb-6 shadow-sm bg-slate-50" />
+                    <div className="w-full h-64 bg-white rounded-xl mb-6 border border-slate-200 flex items-center justify-center p-2 shadow-sm">
+                      <img 
+                        src={selectedItem.image_url} 
+                        className="w-full h-full object-contain rounded-lg" 
+                        alt="Item Preview"
+                      />
+                    </div>
                   ) : (
-                    <div className="w-full h-32 bg-slate-100 rounded-xl mb-6 flex items-center justify-center text-slate-400 italic text-sm">No Image Available</div>
+                    <div className="w-full h-32 bg-slate-100 rounded-xl mb-6 flex items-center justify-center text-slate-400 italic text-sm border border-dashed border-slate-300">
+                      No Image Available
+                    </div>
                   )}
 
                   <div className="flex-1 space-y-6">
