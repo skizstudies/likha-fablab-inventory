@@ -79,7 +79,6 @@ function AuthScreen() {
         <p className="text-slate-500 text-center mb-6 text-sm uppercase tracking-wide">Inventory System</p>
         
         <div className="space-y-3">
-          {/* Simple Email & Password for everyone */}
           <input required type="email" placeholder="Email" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none" value={email} onChange={e => setEmail(e.target.value)} />
           <input required type="password" placeholder="Password" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none" value={password} onChange={e => setPassword(e.target.value)} />
           
@@ -118,9 +117,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
 
   useEffect(() => { fetchData() }, [])
 
-  // 3. Onboarding Check Effect (The one we updated)
   useEffect(() => {
-    // Safe check: If profile exists, AND (name is missing OR name is "New User")
     if (userProfile && (!userProfile.first_name || userProfile.first_name === 'New User')) {
       setIsOnboarding(true)
     } else {
@@ -129,9 +126,9 @@ function MainApp({ session, userProfile, refreshProfile }) {
   }, [userProfile])
 
   async function fetchData() {
-    console.log("Fetching data...") // Check console to see if this runs
+    console.log("Fetching data...") 
 
-    // 1. GET INVENTORY (Isolated - so it always works)
+    // 1. GET INVENTORY 
     const { data: inv, error: invError } = await supabase
       .from('inventory')
       .select('*')
@@ -143,14 +140,14 @@ function MainApp({ session, userProfile, refreshProfile }) {
       setItems(inv)
     }
 
-    // 2. GET LOGS (Now with Profiles!)
+    // 2. GET LOGS 
     const { data: lg, error: logError } = await supabase
       .from('transaction_log')
       .select(`
         *,
         inventory ( item_name ),
         profiles ( first_name, last_name ) 
-      `) // <--- We now fetch the Profile Name too
+      `) 
       .order('timestamp', { ascending: false })
       
     if (logError) {
@@ -166,8 +163,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
     setIsSaving(true)
 
     try {
-      // 1. CLEAN THE DATA (The "Sanitization" Step)
-      // If the user types nothing, we force it to be 0 or an empty array.
+      // 1. CLEAN THE DATA 
       
       const safeQty = parseInt(newItem.qty) || 0
       const safeThreshold = parseInt(newItem.threshold) || 5
@@ -190,7 +186,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
         image_url: newItem.img || null // Send null if empty, not ""
       }
 
-      console.log("Sending to Supabase:", itemPayload) // <--- Check Console if it fails again!
+      console.log("Sending to Supabase:", itemPayload) 
 
       // 3. SEND TO DATABASE
       const { data, error } = await supabase.from('inventory').insert([itemPayload]).select()
@@ -214,14 +210,14 @@ function MainApp({ session, userProfile, refreshProfile }) {
   }
 
   async function handleUpdateItem() {
-    // 1. Find the original item to compare values (Before the edit)
+    // Find the original item to compare values (Before the edit)
     const originalItem = items.find(i => i.id === selectedItem.id)
     if (!originalItem) return
 
-    // 2. Calculate the difference for the Log
+    // Calculate the difference for the Log
     const stockDifference = selectedItem.quantity - originalItem.quantity
 
-    // 3. Update the Item in Database (Everything: Stock, Name, Desc, etc.)
+    // Update the Item in Database (Everything: Stock, Name, Desc, etc.)
     const { error } = await supabase.from('inventory').update({
       item_name: selectedItem.item_name,
       category: selectedItem.category,
@@ -231,7 +227,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
       threshold: selectedItem.threshold
     }).eq('id', selectedItem.id)
     
-    // 4. If Stock changed, Save the Log
+    // If Stock changed, Save the Log
     if (!error && stockDifference !== 0) {
       const type = stockDifference > 0 ? 'Restock' : 'Usage'
       await logTransaction(selectedItem.id, stockDifference, type)
@@ -239,7 +235,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
 
     if (!error) {
       setIsEditing(false)
-      fetchData() // Refresh the table
+      fetchData() 
     }
   }
 
@@ -266,7 +262,6 @@ function MainApp({ session, userProfile, refreshProfile }) {
   }
 
   async function logTransaction(itemId, amount, type) {
-    // We now save the user_id (for the Name) AND user_email (as backup)
     const { error } = await supabase.from('transaction_log').insert([{
       item_id: itemId, 
       change_amount: amount, 
@@ -279,7 +274,6 @@ function MainApp({ session, userProfile, refreshProfile }) {
   }
 
   // --- CHART DATA PREP ---
-  // Bar Chart: Stock Status (Red, Yellow, Green)
   const stockStatusData = [
     { name: 'In Stock', value: items.filter(i => i.quantity > i.threshold).length, fill: '#10b981' },
     { name: 'Low Stock', value: items.filter(i => i.quantity <= i.threshold && i.quantity > 0).length, fill: '#f59e0b' },
@@ -305,10 +299,10 @@ function MainApp({ session, userProfile, refreshProfile }) {
   )
 
 return (
-    // 1. GLOBAL RED BACKGROUND (The Canvas)
+    // 1. Global Red Background
     <div className="flex h-screen bg-red-900 p-4 gap-4 overflow-hidden font-sans">
       
-      {/* 2. FLOATING SIDEBAR (White Pill) */}
+      {/* 2. Floating Sidebar */}
       <aside className="w-64 bg-white rounded-[2rem] shadow-2xl flex flex-col py-6 md:flex z-20">
         
         {/* Logo Area */}
@@ -338,7 +332,7 @@ return (
           </button>
         </nav>
 
-        {/* User Profile Snippet (Bottom of Sidebar) */}
+        {/* User Profile Snippet */}
         <div className="px-6 mt-auto">
           <button onClick={() => setView('profile')} className="w-full bg-slate-50 p-3 rounded-2xl flex items-center gap-3 hover:bg-slate-100 transition border border-slate-100 group">
              <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs border-2 border-white shadow-sm overflow-hidden">
@@ -352,7 +346,7 @@ return (
         </div>
       </aside>
 
-      {/* 3. MAIN WORKSPACE (The White Sheet) */}
+      {/* 3. Main Workspace */}
       <main className="flex-1 bg-slate-50 rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col">
         
         {/* Top Header Bar */}
@@ -377,7 +371,6 @@ return (
 
            {/* Header Controls */}
            <div className="flex items-center gap-4">
-             {/* Add Item Button (Moved to Header) */}
              {view === 'inventory' && (
                 <button onClick={() => setIsModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-red-200 transition text-sm">
                     <Plus size={18} /> Add Item
@@ -521,15 +514,10 @@ return (
               </div>
            )}
 
-           {/* --- VIEW: PROFILE (Compacted & Centered) --- */}
+           {/* --- VIEW: PROFILE --- */}
            {view === 'profile' && userProfile && (
-              // 1. h-full + items-center centers it perfectly in the white sheet
               <div className="h-full flex items-center justify-center animate-pop p-2">
-                
-                {/* 2. Reduced padding (p-8 -> p-6) to save height */}
                 <div className="bg-white w-full max-w-lg p-6 rounded-3xl shadow-sm border border-slate-200">
-                  
-                  {/* Header: Back Button & Title */}
                   <div className="flex items-center justify-between mb-6">
                     <button 
                       onClick={() => setView('inventory')} 
@@ -542,7 +530,7 @@ return (
                     <div className="w-8"></div> {/* Spacer to center title */}
                   </div>
                   
-                  {/* Avatar Uploader (Compact) */}
+                  {/* Avatar Uploader */}
                   <div className="flex justify-center mb-6">
                     <div className="relative group cursor-pointer">
                        <div className="w-24 h-24 rounded-full border-4 border-slate-50 shadow-inner overflow-hidden bg-slate-100 flex items-center justify-center">
@@ -570,7 +558,7 @@ return (
                     </div>
                   </div>
 
-                  {/* Form (Reduced vertical space) */}
+                  {/* Form */}
                   <form onSubmit={async (e) => {
                       e.preventDefault()
                       const formData = new FormData(e.target)
@@ -612,7 +600,7 @@ return (
 
       </main>
 
-      {/* 4. SLIDE-OVER PANEL (Fixed on right, but styled to float) */}
+      {/* 4. Slide-Over Panel */}
       <div className={`fixed top-4 bottom-4 right-4 w-[450px] bg-white rounded-3xl shadow-2xl transform transition-transform duration-300 z-50 overflow-hidden flex flex-col border border-slate-100 ${selectedItem ? 'translate-x-0' : 'translate-x-[120%]'}`}>
           {selectedItem && (
              <div className="flex-1 flex flex-col overflow-y-auto p-8 pb-32">
@@ -645,7 +633,7 @@ return (
                      )}
                    </div>
 
-                   {/* Stock Card (Using your updated code) */}
+                   {/* Stock Card */}
                    <div>
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{isEditing ? "Adjust Stock Level" : "Current Stock"}</h3>
                       <div className={`p-1.5 rounded-3xl border ${isEditing ? 'border-red-200 bg-red-50/50' : 'border-slate-100 bg-slate-50'}`}>
@@ -690,7 +678,7 @@ return (
           )}
       </div>
 
-      {/* 5. MODALS (Add Item & Onboarding) */}
+      {/* 5. Modals (Add Item & Onboarding) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl animate-scale-in">
