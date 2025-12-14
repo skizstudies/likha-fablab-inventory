@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { 
   Plus, Trash2, LogOut, User, LayoutGrid, Search, X, 
   ChevronRight, Edit3, Save, MoreVertical, Settings, AlertTriangle, ArrowLeft,
-  Camera, Loader2, ChevronDown
+  Camera, Loader2, ChevronDown, FileText, Minus
 } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
@@ -75,22 +75,22 @@ function AuthScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 font-sans">
       <form onSubmit={handleAuth} className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
-        <h1 className="text-3xl font-bold text-center text-blue-900 mb-2">LIKHA FabLab</h1>
+        <h1 className="text-3xl font-bold text-center text-red-900 mb-2">LIKHA FabLab</h1>
         <p className="text-slate-500 text-center mb-6 text-sm uppercase tracking-wide">Inventory System</p>
         
         <div className="space-y-3">
           {/* Simple Email & Password for everyone */}
-          <input required type="email" placeholder="Email" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={email} onChange={e => setEmail(e.target.value)} />
-          <input required type="password" placeholder="Password" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={password} onChange={e => setPassword(e.target.value)} />
+          <input required type="email" placeholder="Email" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none" value={email} onChange={e => setEmail(e.target.value)} />
+          <input required type="password" placeholder="Password" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none" value={password} onChange={e => setPassword(e.target.value)} />
           
-          {msg && <div className="p-3 bg-blue-50 text-blue-700 text-sm rounded text-center">{msg}</div>}
+          {msg && <div className="p-3 bg-red-50 text-red-700 text-sm rounded text-center">{msg}</div>}
 
-          <button disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+          <button disabled={loading} className="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition">
             {loading ? 'Processing...' : (isRegister ? 'Sign Up' : 'Log In')}
           </button>
           
           <div className="text-center mt-4">
-            <button type="button" onClick={() => setIsRegister(!isRegister)} className="text-sm text-slate-500 hover:text-blue-600 underline">
+            <button type="button" onClick={() => setIsRegister(!isRegister)} className="text-sm text-slate-500 hover:text-red-600 underline">
               {isRegister ? "Already have an account? Login" : "New here? Create Account"}
             </button>
           </div>
@@ -304,534 +304,458 @@ function MainApp({ session, userProfile, refreshProfile }) {
     item.category.toLowerCase().includes(search.toLowerCase())
   )
 
-  return (
-    <div className="min-h-screen bg-slate-100 font-sans text-slate-800 flex flex-col h-screen overflow-hidden">
+return (
+    // 1. GLOBAL RED BACKGROUND (The Canvas)
+    <div className="flex h-screen bg-red-900 p-4 gap-4 overflow-hidden font-sans">
       
-      {/* NAVBAR */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm z-20">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg text-white"><LayoutGrid size={24}/></div>
-          <div><h1 className="text-xl font-bold text-slate-900 leading-none">LIKHA FabLab</h1></div>
+      {/* 2. FLOATING SIDEBAR (White Pill) */}
+      <aside className="w-64 bg-white rounded-[2rem] shadow-2xl flex flex-col py-6 hidden md:flex z-20">
+        
+        {/* Logo Area */}
+        <div className="px-8 mb-10 flex items-center gap-3">
+          <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-red-200 shadow-lg">
+            <LayoutGrid size={22} strokeWidth={2.5} />
+          </div>
+          <span className="text-xl font-extrabold text-slate-800 tracking-tight">LIKHA<span className="text-red-600">FabLab</span></span>
         </div>
 
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-          <button onClick={() => {setView('inventory'); setSelectedItem(null)}} className={`px-6 py-2 rounded-md text-sm font-bold transition ${view === 'inventory' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>Inventory</button>
-          <button onClick={() => {setView('reports'); setSelectedItem(null)}} className={`px-6 py-2 rounded-md text-sm font-bold transition ${view === 'reports' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>Reports</button>
-        </div>
-
-      {/* User Profile Section */}
-        <div className="relative">
-            
-          {/* 1. The Profile Button */}
+        {/* Navigation Menu */}
+        <nav className="flex-1 px-4 space-y-2">
           <button 
-            onClick={() => setIsProfileOpen(!isProfileOpen)} 
-            className="flex items-center gap-3 hover:bg-slate-100 p-2 rounded-xl transition"
-            >
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm overflow-hidden">
-              {userProfile?.avatar_url ? (
-                <img src={userProfile.avatar_url} className="w-full h-full object-cover" />
-              ) : (
-                userProfile?.first_name?.[0] || <User size={18}/>
-              )}
-            </div>
-              
-            <div className="text-left hidden md:block">
-              <p className="text-sm font-bold text-slate-700">{userProfile?.first_name || 'User'}</p>
-              <p className="text-xs text-slate-500 capitalize">{userProfile?.user_type || 'Student'}</p>
-            </div>
-            <ChevronDown size={16} className={`text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`}/>
+            onClick={() => {setView('inventory'); setSelectedItem(null)}}
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group ${view === 'inventory' ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+          >
+            <LayoutGrid size={20} />
+            <span className="font-bold text-sm tracking-wide">Inventory</span>
           </button>
 
-          {/* 2. The Dropdown Logic */}
-          {isProfileOpen && (
-            <>
-              {/* A. INVISIBLE BACKDROP (Clicking this closes the menu) */}
-              <div 
-                className="fixed inset-0 z-10 cursor-default" 
-                onClick={() => setIsProfileOpen(false)}
-              ></div>
+          <button 
+            onClick={() => {setView('reports'); setSelectedItem(null)}}
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group ${view === 'reports' ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+          >
+            <FileText size={20} />
+            <span className="font-bold text-sm tracking-wide">Reports</span>
+          </button>
+        </nav>
 
-              {/* B. THE MENU (Sits on top of the backdrop) */}
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-20 animate-fade-in-down origin-top-right">
-                
-                <div className="px-4 py-3 border-b border-slate-100 mb-2">
-                  <p className="text-sm font-bold text-slate-900">Signed in as</p>
-                  <p className="text-xs text-slate-500 truncate">{session.user.email}</p>
-                </div>
+        {/* User Profile Snippet (Bottom of Sidebar) */}
+        <div className="px-6 mt-auto">
+          <button onClick={() => setView('profile')} className="w-full bg-slate-50 p-3 rounded-2xl flex items-center gap-3 hover:bg-slate-100 transition border border-slate-100 group">
+             <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs border-2 border-white shadow-sm overflow-hidden">
+                {userProfile?.avatar_url ? <img src={userProfile.avatar_url} className="w-full h-full object-cover"/> : (userProfile?.first_name?.[0] || 'U')}
+             </div>
+             <div className="text-left overflow-hidden">
+                <p className="text-xs font-bold text-slate-700 truncate group-hover:text-red-600 transition">{userProfile?.first_name || 'User'}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">{userProfile?.user_type || 'Student'}</p>
+             </div>
+          </button>
+        </div>
+      </aside>
 
-                <button 
-                  onClick={() => { setView('profile'); setIsProfileOpen(false) }}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 font-medium transition flex items-center gap-2"
-                >
-                  <Settings size={16} /> Profile Settings
-                </button>
-                
-                <button 
-                  onClick={async () => { await supabase.auth.signOut(); window.location.reload() }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium transition flex items-center gap-2"
-                >
-                  <LogOut size={16} /> Sign Out
-                </button>
-              </div>
-            </>
-          )}
-        </div>      
-      </div>
-
-      {/* CONTENT */}
-      <div className="flex-1 overflow-hidden relative flex bg-slate-100">
+      {/* 3. MAIN WORKSPACE (The White Sheet) */}
+      <main className="flex-1 bg-slate-50 rounded-[2rem] shadow-2xl relative overflow-hidden flex flex-col">
         
-        {view === 'inventory' && (
-          <>
-            <div className={`flex-1 p-6 md:p-12 overflow-y-auto transition-all duration-300 ${selectedItem ? 'mr-[450px]' : ''}`}>
-              <div className="max-w-7xl mx-auto">
-                {/* TOOLBAR */}
-                <div className="flex justify-between items-center mb-6">
-                  <div className="relative w-96">
-                    <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                    <input className="w-full pl-12 pr-4 py-3 rounded-xl border-none focus:ring-2 focus:ring-blue-500 shadow-sm bg-white" 
-                      placeholder="Search inventory..." value={search} onChange={e => setSearch(e.target.value)} />
-                  </div>
-                  <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition">
-                    <Plus size={20} /> Add Item
-                  </button>
-                </div>
+        {/* Top Header Bar */}
+        <header className="h-24 bg-white border-b border-slate-100 flex items-center justify-between px-8 shrink-0 z-10">
+           
+           {/* Search Bar - Only visible in Inventory */}
+           {view === 'inventory' ? (
+             <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 w-96 focus-within:ring-2 focus-within:ring-red-100 transition">
+               <Search size={18} className="text-slate-400"/>
+               <input 
+                 type="text" 
+                 placeholder="Search inventory..." 
+                 className="bg-transparent outline-none text-sm font-bold text-slate-600 w-full placeholder:text-slate-300"
+                 value={search}
+                 onChange={(e) => setSearch(e.target.value)}
+               />
+             </div>
+           ) : (
+             /* Empty spacer to keep the Profile/Logout buttons on the right side */
+             <div></div>
+           )}
 
-                {/* TABLE */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase text-xs tracking-wider">
-                      <tr>
-                        <th className="p-4 text-left font-bold">Item Name</th>
-                        <th className="p-4 text-center font-bold">Category</th>
-                        <th className="p-4 text-center font-bold">Stock Quantity</th>
-                        <th className="p-4 text-center font-bold">Location</th>
-                        <th className="p-4 text-center font-bold">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredItems.map(item => {
-                        const isLow = item.quantity <= item.threshold
-                        return (
-                          <tr key={item.id} onClick={() => {setSelectedItem(item); setIsEditing(false)}} 
-                            className={`cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50 transition group ${isLow ? 'bg-red-50 hover:bg-red-100' : ''}`}>
-                            <td className="p-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-2 h-8 rounded-full" style={{backgroundColor: item.color_code}}></div>
-                                <div>
-                                  <div className="font-bold text-slate-800">{item.item_name}</div>
-                                  {isLow && <div className="text-[10px] text-red-500 font-bold uppercase tracking-wide flex items-center gap-1"><AlertTriangle size={10}/> Low Stock</div>}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-4 text-center"><span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600">{item.category}</span></td>
-                            <td className="p-4 text-center">
-                              <span className={`font-bold text-lg ${item.quantity === 0 ? 'text-red-500' : 'text-slate-700'}`}>{item.quantity}</span>
-                            </td>
-                            <td className="p-4 text-center text-sm text-slate-500">{item.location}</td>
-                            <td className="p-4 text-center">
-                              <button onClick={(e) => {e.stopPropagation(); handleDeleteItem(item.id)}} className="p-2 text-slate-300 hover:text-red-500 transition"><Trash2 size={18}/></button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                  {filteredItems.length === 0 && <div className="p-12 text-center text-slate-400">No items found matching your search.</div>}
-                </div>
-              </div>
-            </div>
+           {/* Header Controls */}
+           <div className="flex items-center gap-4">
+             {/* Add Item Button (Moved to Header) */}
+             {view === 'inventory' && (
+                <button onClick={() => setIsModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-red-200 transition text-sm">
+                    <Plus size={18} /> Add Item
+                </button>
+             )}
 
-            {/* SIDE DETAILS PANEL (Slide Over) */}
-            <div className={`fixed top-[88px] right-0 bottom-0 w-[450px] bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 z-30 overflow-y-auto ${selectedItem ? 'translate-x-0' : 'translate-x-full'}`}>
-              {selectedItem && (
-                <div className="p-8 min-h-full flex flex-col pb-32">
-                  <div className="flex justify-between items-start mb-6">
-                    <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-600"><ChevronRight size={24}/></button>
-                    <div className="flex gap-2">
-                       {isEditing ? (
-                         <button onClick={handleUpdateItem} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700"><Save size={16}/> Save</button>
-                       ) : (
-                         <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200"><Edit3 size={16}/> Edit</button>
-                       )}
+             <button 
+                onClick={async () => { await supabase.auth.signOut(); window.location.reload() }}
+                className="w-12 h-12 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
+                title="Sign Out"
+             >
+               <LogOut size={18} />
+             </button>
+           </div>
+        </header>
+
+        {/* SCROLLABLE CONTENT AREA */}
+        <div className="flex-1 overflow-y-auto p-8 relative scroll-smooth">
+           
+           {/* --- VIEW: INVENTORY --- */}
+           {view === 'inventory' && (
+              <div className={`animate-pop transition-all duration-300 ${selectedItem ? 'mr-[450px]' : ''}`}>
+                 {/* Stats Row (Optional Visuals) */}
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-6 text-white shadow-xl shadow-red-200 relative overflow-hidden">
+                       <h3 className="text-red-100 font-medium mb-1">Total Items</h3>
+                       <p className="text-4xl font-bold tracking-tight">{items.length}</p>
+                       <LayoutGrid className="absolute bottom-[-10px] right-[-10px] opacity-20 text-white" size={100}/>
                     </div>
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-center">
+                       <h3 className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-2">Low Stock Alerts</h3>
+                       <div className="flex items-end gap-2">
+                          <p className="text-4xl font-bold text-slate-800">{items.filter(i => i.quantity <= i.threshold).length}</p>
+                          <span className="text-sm text-red-500 font-bold mb-2 bg-red-50 px-2 py-1 rounded-lg">Needs Attention</span>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* The Table */}
+                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                   <table className="w-full">
+                     <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase text-xs tracking-wider">
+                       <tr>
+                         <th className="p-4 text-left font-bold pl-8">Item Name</th>
+                         <th className="p-4 text-center font-bold">Category</th>
+                         <th className="p-4 text-center font-bold">Stock</th>
+                         <th className="p-4 text-center font-bold">Location</th>
+                         <th className="p-4 text-center font-bold">Actions</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {filteredItems.map(item => {
+                         const isLow = item.quantity <= item.threshold
+                         return (
+                           <tr key={item.id} onClick={() => {setSelectedItem(item); setIsEditing(false)}} 
+                             className={`cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50 transition group ${isLow ? 'bg-red-50 hover:bg-red-100' : ''}`}>
+                             <td className="p-4 pl-8">
+                               <div className="flex items-center gap-4">
+                                 <div className="w-3 h-10 rounded-full" style={{backgroundColor: item.color_code}}></div>
+                                 <div>
+                                   <div className="font-bold text-slate-800 text-base">{item.item_name}</div>
+                                   {isLow && <div className="text-[10px] text-red-500 font-bold uppercase tracking-wide flex items-center gap-1 mt-0.5"><AlertTriangle size={10}/> Low Stock</div>}
+                                 </div>
+                               </div>
+                             </td>
+                             <td className="p-4 text-center"><span className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600 uppercase tracking-wide">{item.category}</span></td>
+                             <td className="p-4 text-center">
+                               <span className={`font-mono font-bold text-lg ${item.quantity === 0 ? 'text-red-500' : 'text-slate-700'}`}>{item.quantity}</span>
+                             </td>
+                             <td className="p-4 text-center text-sm font-medium text-slate-500">{item.location}</td>
+                             <td className="p-4 text-center">
+                               <button onClick={(e) => {e.stopPropagation(); handleDeleteItem(item.id)}} className="p-2 text-slate-300 hover:text-red-500 transition hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button>
+                             </td>
+                           </tr>
+                         )
+                       })}
+                     </tbody>
+                   </table>
+                   {filteredItems.length === 0 && <div className="p-12 text-center text-slate-400 font-medium">No items found matching "{search}"</div>}
+                 </div>
+              </div>
+           )}
+
+           {/* --- VIEW: REPORTS --- */}
+           {view === 'reports' && (
+              <div className="max-w-6xl mx-auto animate-pop">
+                <h2 className="text-2xl font-bold text-slate-900 mb-6">Analytics & Logs</h2>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                     <h3 className="font-bold text-slate-700 mb-4">Stock Status Overview</h3>
+                     <div className="h-64">
+                         <ResponsiveContainer width="100%" height="100%">
+                           <BarChart data={stockStatusData}>
+                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                             <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                             <ChartTooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                             <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                               {stockStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                             </Bar>
+                           </BarChart>
+                         </ResponsiveContainer>
+                     </div>
+                   </div>
+
+                   <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                     <h3 className="font-bold text-slate-700 mb-4">Usage Frequency</h3>
+                     <div className="h-64">
+                         <ResponsiveContainer width="100%" height="100%">
+                           <PieChart>
+                             <Pie data={usageData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                               {usageData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                             </Pie>
+                             <Legend verticalAlign="bottom" height={36} iconType="circle"/>
+                             <ChartTooltip contentStyle={{borderRadius: '12px', border: 'none'}} />
+                           </PieChart>
+                         </ResponsiveContainer>
+                     </div>
+                   </div>
+                 </div>
+
+                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                   <div className="p-6 border-b border-slate-100 font-bold text-slate-800">History Logs</div>
+                   <table className="w-full text-left">
+                     <thead className="text-xs uppercase text-slate-400 bg-slate-50"><tr><th className="p-4 pl-6">Date</th><th className="p-4">User</th><th className="p-4">Action</th><th className="p-4">Item</th></tr></thead>
+                     <tbody>
+                       {logs.map(log => (
+                         <tr key={log.id} className="border-b last:border-0 hover:bg-slate-50 transition">
+                           <td className="p-4 pl-6 text-sm text-slate-500 font-medium">{new Date(log.timestamp).toLocaleDateString()}</td>
+                           <td className="p-4 font-bold text-slate-700">
+                             {log.profiles ? `${log.profiles.first_name} ${log.profiles.last_name}` : log.user_email}
+                           </td>
+                           <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${log.change_amount > 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{log.action_type} {log.change_amount > 0 ? '+' : ''}{log.change_amount}</span></td>
+                           <td className="p-4 text-sm font-medium text-slate-600">{log.inventory?.item_name}</td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                 </div>
+              </div>
+           )}
+
+           {/* --- VIEW: PROFILE (Compacted & Centered) --- */}
+           {view === 'profile' && userProfile && (
+              // 1. h-full + items-center centers it perfectly in the white sheet
+              <div className="h-full flex items-center justify-center animate-pop p-2">
+                
+                {/* 2. Reduced padding (p-8 -> p-6) to save height */}
+                <div className="bg-white w-full max-w-lg p-6 rounded-3xl shadow-sm border border-slate-200">
+                  
+                  {/* Header: Back Button & Title */}
+                  <div className="flex items-center justify-between mb-6">
+                    <button 
+                      onClick={() => setView('inventory')} 
+                      className="group flex items-center gap-2 text-slate-400 hover:text-red-600 transition-colors font-bold text-sm"
+                    >
+                      <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" /> 
+                      Back
+                    </button>
+                    <h2 className="text-xl font-bold text-slate-900">Edit Profile</h2>
+                    <div className="w-8"></div> {/* Spacer to center title */}
                   </div>
                   
-                  {selectedItem.image_url ? (
-                    <div className="w-full h-64 bg-white rounded-xl mb-6 border border-slate-200 flex items-center justify-center p-2 shadow-sm">
-                      <img 
-                        src={selectedItem.image_url} 
-                        className="w-full h-full object-contain rounded-lg" 
-                        alt="Item Preview"
-                      />
+                  {/* Avatar Uploader (Compact) */}
+                  <div className="flex justify-center mb-6">
+                    <div className="relative group cursor-pointer">
+                       <div className="w-24 h-24 rounded-full border-4 border-slate-50 shadow-inner overflow-hidden bg-slate-100 flex items-center justify-center">
+                         {userProfile.avatar_url ? <img src={`${userProfile.avatar_url}?t=${new Date().getTime()}`} className="w-full h-full object-cover" /> : <User size={40} className="text-slate-300"/>}
+                       </div>
+                       <label className="absolute bottom-0 right-0 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 transition cursor-pointer hover:scale-105 active:scale-95">
+                         {isSaving ? <Loader2 size={16} className="animate-spin"/> : <Camera size={16}/>}
+                         <input type="file" accept="image/*" className="hidden" disabled={isSaving}
+                           onChange={async (e) => {
+                             if (!e.target.files || e.target.files.length === 0) return
+                             setIsSaving(true)
+                             try {
+                               const file = e.target.files[0]
+                               const fileName = `${session.user.id}-${Math.random()}.${file.name.split('.').pop()}`
+                               const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file)
+                               if (uploadError) throw uploadError
+                               const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName)
+                               await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', session.user.id)
+                               await refreshProfile()
+                               alert("Profile picture updated!")
+                             } catch (error) { alert("Error: " + error.message) } finally { setIsSaving(false) }
+                           }} 
+                         />
+                       </label>
                     </div>
-                  ) : (
-                    <div className="w-full h-32 bg-slate-100 rounded-xl mb-6 flex items-center justify-center text-slate-400 italic text-sm border border-dashed border-slate-300">
-                      No Image Available
-                    </div>
-                  )}
+                  </div>
 
-                  <div className="flex-1 space-y-6">
-                    <div>
-                      {isEditing ? <input className="text-2xl font-bold w-full border-b border-blue-500 outline-none" value={selectedItem.item_name} onChange={e => setSelectedItem({...selectedItem, item_name: e.target.value})} /> : <h2 className="text-3xl font-bold text-slate-900">{selectedItem.item_name}</h2>}
-                      {isEditing ? (
-                        <select className="mt-2 p-2 border rounded" value={selectedItem.category} onChange={e => setSelectedItem({...selectedItem, category: e.target.value})}>
-                          <option>Consumable</option><option>Tool</option><option>Equipment</option>
-                        </select>
-                      ) : (
-                        <span className="mt-2 inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold uppercase">{selectedItem.category}</span>
-                      )}
-                    </div>
-
-                    <div className="mb-8">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                        {isEditing ? "Adjust Stock Level" : "Current Stock"}
-                      </h3>
-                      
-                      <div className={`p-1 rounded-2xl border ${isEditing ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 bg-slate-50'}`}>
-                        {isEditing ? (
-                          // EDIT MODE: Big Buttons
-                          <div className="flex items-center gap-2 p-1">
-                            <button 
-                              onClick={() => setSelectedItem({...selectedItem, quantity: Math.max(0, selectedItem.quantity - 1)})} 
-                              className="w-14 h-14 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold text-slate-600 shadow-sm transition active:scale-95"
-                            >
-                              <Minus size={20} />
-                            </button>
-                            
-                            <input 
-                              type="number" 
-                              value={selectedItem.quantity} 
-                              onChange={(e) => setSelectedItem({...selectedItem, quantity: parseInt(e.target.value) || 0})}
-                              className="flex-1 h-14 text-center border border-slate-200 rounded-xl font-bold text-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-inner"
-                            />
-                            
-                            <button 
-                              onClick={() => setSelectedItem({...selectedItem, quantity: selectedItem.quantity + 1})} 
-                              className="w-14 h-14 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-green-50 hover:text-green-600 hover:border-green-200 font-bold text-slate-600 shadow-sm transition active:scale-95"
-                            >
-                              <Plus size={20} />
-                            </button>
-                          </div>
-                        ) : (
-                          // VIEW MODE: Stat Card with Badge
-                          <div className="flex items-center justify-between p-4">
-                            <div className="flex flex-col">
-                              <span className="text-4xl font-bold text-slate-800 tracking-tight">
-                                {selectedItem.quantity}
-                              </span>
-                              <span className="text-xs font-bold text-slate-400 uppercase">Units Available</span>
-                            </div>
-
-                            <div className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
-                              selectedItem.quantity <= selectedItem.threshold 
-                                ? 'bg-red-100 text-red-700 border-red-200' 
-                                : 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                            }`}>
-                              <div className={`w-2 h-2 rounded-full ${
-                                selectedItem.quantity <= selectedItem.threshold ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'
-                              }`} />
-                              <span className="text-xs font-bold uppercase tracking-wide">
-                                {selectedItem.quantity <= selectedItem.threshold ? 'Low Stock' : 'In Stock'}
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                  {/* Form (Reduced vertical space) */}
+                  <form onSubmit={async (e) => {
+                      e.preventDefault()
+                      const formData = new FormData(e.target)
+                      const { error } = await supabase.from('profiles').update({
+                        first_name: formData.get('firstName'),
+                        last_name: formData.get('lastName'),
+                      }).eq('id', session.user.id)
+                      if (!error) { alert("Profile Updated!"); refreshProfile() }
+                  }} className="space-y-12">
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block ml-1">First Name</label>
+                        <input name="firstName" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-red-500 transition font-medium text-sm" defaultValue={userProfile.first_name} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block ml-1">Last Name</label>
+                        <input name="lastName" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-red-500 transition font-medium text-sm" defaultValue={userProfile.last_name} />
                       </div>
                     </div>
 
                     <div>
-                      <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Description</h4>
-                      {isEditing ? <textarea className="w-full p-3 border rounded h-24" value={selectedItem.description} onChange={e => setSelectedItem({...selectedItem, description: e.target.value})} /> : <p className="text-slate-600 text-sm leading-relaxed">{selectedItem.description || "No description."}</p>}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                       <div>
-                         <h4 className="text-xs font-bold text-slate-400 uppercase">Location</h4>
-                         {isEditing ? <input className="w-full border-b" value={selectedItem.location} onChange={e => setSelectedItem({...selectedItem, location: e.target.value})}/> : <p className="font-medium text-slate-800">{selectedItem.location}</p>}
-                       </div>
-                       <div>
-                         <h4 className="text-xs font-bold text-slate-400 uppercase">Low Stock Limit</h4>
-                         {isEditing ? <input type="number" className="w-full border-b" value={selectedItem.threshold} onChange={e => setSelectedItem({...selectedItem, threshold: parseInt(e.target.value)})}/> : <p className="font-medium text-red-500">{selectedItem.threshold} items</p>}
+                       <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block ml-1">User Role</label>
+                       <div className="w-full p-3 border border-slate-200 rounded-xl bg-slate-100 text-slate-500 font-medium text-sm cursor-not-allowed">
+                         {userProfile.user_type || 'Student'}
                        </div>
                     </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
 
-        {/* VIEW: REPORTS */}
-        {view === 'reports' && (
-          <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
-            <div className="max-w-6xl mx-auto">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">Analytics & Logs</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <h3 className="font-bold text-slate-700 mb-4">Stock Status Overview</h3>
-                  <div className="h-64">
-                     <ResponsiveContainer width="100%" height="100%">
-                       <BarChart data={stockStatusData}>
-                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                         <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                         <YAxis axisLine={false} tickLine={false} />
-                         <ChartTooltip cursor={{fill: 'transparent'}} />
-                         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                           {stockStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                         </Bar>
-                       </BarChart>
-                     </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <h3 className="font-bold text-slate-700 mb-4">Top Used Items (Usage Frequency)</h3>
-                  <div className="h-64">
-                     <ResponsiveContainer width="100%" height="100%">
-                       <PieChart>
-                         <Pie data={usageData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                           {usageData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                         </Pie>
-                         <Legend verticalAlign="bottom" height={36}/>
-                         <ChartTooltip />
-                       </PieChart>
-                     </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
-                <div className="p-4 border-b font-bold text-slate-700">History Logs</div>
-                <table className="w-full text-left">
-                  <thead className="text-xs uppercase text-slate-400 bg-slate-50"><tr><th className="p-4">Date</th><th className="p-4">User</th><th className="p-4">Action</th><th className="p-4">Item</th></tr></thead>
-                  <tbody>
-                    {logs.map(log => (
-                      <tr key={log.id} className="border-b last:border-0 hover:bg-slate-50">
-                        <td className="p-4 text-sm text-slate-500">{new Date(log.timestamp).toLocaleDateString()}</td>
-                        <td className="p-4 font-bold text-slate-700">
-                          {log.profiles 
-                            ? `${log.profiles.first_name} ${log.profiles.last_name}` 
-                            : log.user_email // Fallback for old logs
-                          }
-                        </td>
-                        <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${log.change_amount > 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{log.action_type} {log.change_amount > 0 ? '+' : ''}{log.change_amount}</span></td>
-                        <td className="p-4 text-sm font-medium">{log.inventory?.item_name}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW: PROFILE SETTINGS */}
-        {view === 'profile' && userProfile && (
-          <div className="flex-1 p-8 flex justify-center bg-slate-100 overflow-y-auto pb-20">
-            <div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-sm border border-slate-200 h-fit animate-fade-in my-auto">
-              
-              <button 
-                onClick={() => setView('inventory')} 
-                className="group flex items-center gap-2 text-slate-400 hover:text-blue-600 mb-8 transition-colors font-bold text-sm"
-              >
-                <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-1" /> 
-                Back to Dashboard
-              </button>
-
-              <h2 className="text-2xl font-bold mb-8 text-slate-900 text-center">Edit Profile</h2>
-              
-              {/* --- AVATAR UPLOADER --- */}
-              <div className="flex justify-center mb-8">
-                <div className="relative group cursor-pointer">
-                    {/* 1. The Image Display */}
-                    <div className="w-32 h-32 rounded-full border-4 border-slate-100 shadow-sm overflow-hidden bg-slate-100 flex items-center justify-center">
-                      {userProfile.avatar_url ? (
-                        <img src={`${userProfile.avatar_url}?t=${new Date().getTime()}`} className="w-full h-full object-cover" />
-                      ) : (
-                        <User size={48} className="text-slate-300"/>
-                      )}
+                    <div className="pt-2">
+                       <button className="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-200 transition active:scale-[0.98] text-sm">Save Changes</button>
                     </div>
+                  </form>
 
-                    {/* 2. The Upload Overlay Button */}
-                    <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition cursor-pointer">
-                      {isSaving ? <Loader2 size={18} className="animate-spin"/> : <Camera size={18}/>}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        disabled={isSaving}
-                        onChange={async (e) => {
-                          if (!e.target.files || e.target.files.length === 0) return
-                          
-                          setIsSaving(true)
-                          const file = e.target.files[0]
-                          const fileExt = file.name.split('.').pop()
-                          const fileName = `${session.user.id}-${Math.random()}.${fileExt}`
-                          const filePath = `${fileName}`
-
-                          try {
-                            // A. Upload to Supabase Storage
-                            const { error: uploadError } = await supabase.storage
-                              .from('avatars')
-                              .upload(filePath, file)
-
-                            if (uploadError) throw uploadError
-
-                            // B. Get the Public URL
-                            const { data: { publicUrl } } = supabase.storage
-                              .from('avatars')
-                              .getPublicUrl(filePath)
-
-                            // C. Update Profile Database
-                            const { error: dbError } = await supabase
-                              .from('profiles')
-                              .update({ avatar_url: publicUrl })
-                              .eq('id', session.user.id)
-
-                            if (dbError) throw dbError
-
-                            // D. Refresh UI
-                            await refreshProfile()
-                            alert("Profile picture updated!")
-                            
-                          } catch (error) {
-                            alert("Error uploading image: " + error.message)
-                          } finally {
-                            setIsSaving(false)
-                          }
-                        }} 
-                      />
-                    </label>
                 </div>
               </div>
+           )}
 
-              {/* --- TEXT FORM --- */}
-              <form onSubmit={async (e) => {
-                  e.preventDefault()
-                  const formData = new FormData(e.target)
-                  
-                  const { error } = await supabase.from('profiles').update({
-                    first_name: formData.get('firstName'),
-                    last_name: formData.get('lastName'),
-                  }).eq('id', session.user.id)
-                  
-                  if (!error) {
-                    alert("Profile Updated Successfully!")
-                    refreshProfile()
-                  }
-              }} className="space-y-4">
-                
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">First Name</label>
-                    <input name="firstName" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 transition" defaultValue={userProfile.first_name} />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Last Name</label>
-                    <input name="lastName" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 transition" defaultValue={userProfile.last_name} />
-                </div>
-                
-                <div className="pt-4">
-                    <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition">Save Changes</button>
-                </div>
-              </form>
+        </div>
 
-            </div>
-          </div>
-        )}
+      </main>
 
-        {/* MODAL: ADD ITEM */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl animate-scale-in">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-900">Add New Material</h2>
-                <button onClick={() => setIsModalOpen(false)}><X className="text-slate-400 hover:text-slate-600"/></button>
-              </div>
-              <form onSubmit={handleAddItem} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <input required placeholder="Item Name" className="p-3 border rounded-lg col-span-2 focus:ring-2 focus:ring-blue-500 outline-none" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
-                  <select className="p-3 border rounded-lg bg-white" value={newItem.cat} onChange={e => setNewItem({...newItem, cat: e.target.value})}>
-                    <option>Consumable</option><option>Tool</option><option>Equipment</option><option>Miscellaneous</option>
-                  </select>
-                  <input type="number" placeholder="Initial Qty" className="p-3 border rounded-lg" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: parseInt(e.target.value)})} />
-                  <input placeholder="Location" className="p-3 border rounded-lg" value={newItem.loc} onChange={e => setNewItem({...newItem, loc: e.target.value})} />
-                  <input placeholder="Tags (comma separated)" className="p-3 border rounded-lg" value={newItem.tags} onChange={e => setNewItem({...newItem, tags: e.target.value})} />
-                  <div className="col-span-2">
-                    <textarea placeholder="Item Description..." className="w-full p-3 border rounded-lg h-24 focus:ring-2 focus:ring-blue-500 outline-none" value={newItem.desc} onChange={e => setNewItem({...newItem, desc: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Color Code</label>
-                    <div className="flex gap-2">
-                      {COLORS.map(c => (
-                        <div key={c} onClick={() => setNewItem({...newItem, color: c})} className={`w-8 h-8 rounded-full cursor-pointer ring-2 ring-offset-2 ${newItem.color === c ? 'ring-slate-400' : 'ring-transparent'}`} style={{backgroundColor: c}}></div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Low Stock Limit</label>
-                    <input type="number" className="w-full p-2 border rounded-lg" value={newItem.threshold} onChange={e => setNewItem({...newItem, threshold: parseInt(e.target.value)})} />
-                  </div>
-                   <div className="col-span-2">
-                    <input placeholder="Image URL (Optional)" className="w-full p-3 border rounded-lg" value={newItem.img} onChange={e => setNewItem({...newItem, img: e.target.value})} />
+      {/* 4. SLIDE-OVER PANEL (Fixed on right, but styled to float) */}
+      <div className={`fixed top-4 bottom-4 right-4 w-[450px] bg-white rounded-3xl shadow-2xl transform transition-transform duration-300 z-50 overflow-hidden flex flex-col border border-slate-100 ${selectedItem ? 'translate-x-0' : 'translate-x-[120%]'}`}>
+          {selectedItem && (
+             <div className="flex-1 flex flex-col overflow-y-auto p-8 pb-32">
+                <div className="flex justify-between items-start mb-6">
+                  <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full transition"><ChevronRight size={24}/></button>
+                  <div className="flex gap-2">
+                     {isEditing ? (
+                       <button onClick={handleUpdateItem} className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 shadow-lg shadow-green-100 transition"><Save size={18}/> Save</button>
+                     ) : (
+                       <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition"><Edit3 size={18}/> Edit</button>
+                     )}
                   </div>
                 </div>
-                <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 mt-4 shadow-lg shadow-blue-200">Save to Inventory</button>
-              </form>
-            </div>
-          </div>
-        )}
+                
+                {selectedItem.image_url ? (
+                  <div className="w-full h-64 bg-slate-50 rounded-2xl mb-8 border border-slate-100 flex items-center justify-center p-4">
+                    <img src={selectedItem.image_url} className="w-full h-full object-contain mix-blend-multiply" alt="Item Preview"/>
+                  </div>
+                ) : (
+                  <div className="w-full h-32 bg-slate-50 rounded-2xl mb-8 flex items-center justify-center text-slate-400 italic text-sm border-2 border-dashed border-slate-200">No Image Available</div>
+                )}
 
-        {/* ONBOARDING MODAL (Cannot be closed until saved) */}
-        {isOnboarding && (
-          <div className="fixed inset-0 bg-slate-900/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl animate-scale-in">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User size={32} />
+                <div className="space-y-8">
+                   <div>
+                     {isEditing ? <input className="text-3xl font-bold w-full border-b-2 border-red-500 outline-none pb-2 bg-transparent" value={selectedItem.item_name} onChange={e => setSelectedItem({...selectedItem, item_name: e.target.value})} /> : <h2 className="text-3xl font-bold text-slate-900">{selectedItem.item_name}</h2>}
+                     {isEditing ? (
+                       <select className="mt-4 p-3 border rounded-xl w-full bg-slate-50" value={selectedItem.category} onChange={e => setSelectedItem({...selectedItem, category: e.target.value})}><option>Consumable</option><option>Tool</option><option>Equipment</option></select>
+                     ) : (
+                       <span className="mt-3 inline-block px-4 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-bold uppercase tracking-wide">{selectedItem.category}</span>
+                     )}
+                   </div>
+
+                   {/* Stock Card (Using your updated code) */}
+                   <div>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{isEditing ? "Adjust Stock Level" : "Current Stock"}</h3>
+                      <div className={`p-1.5 rounded-3xl border ${isEditing ? 'border-red-200 bg-red-50/50' : 'border-slate-100 bg-slate-50'}`}>
+                        {isEditing ? (
+                          <div className="flex items-center gap-2 p-1">
+                            <button onClick={() => setSelectedItem({...selectedItem, quantity: Math.max(0, selectedItem.quantity - 1)})} className="w-14 h-14 flex items-center justify-center bg-white border border-slate-200 rounded-2xl hover:bg-red-50 hover:text-red-600 font-bold text-slate-600 shadow-sm transition"><Minus size={20} /></button>
+                            <input type="number" value={selectedItem.quantity} onChange={(e) => setSelectedItem({...selectedItem, quantity: parseInt(e.target.value) || 0})} className="flex-1 h-14 text-center border border-slate-200 rounded-2xl font-bold text-2xl outline-none focus:ring-2 focus:ring-red-500 bg-white shadow-inner"/>
+                            <button onClick={() => setSelectedItem({...selectedItem, quantity: selectedItem.quantity + 1})} className="w-14 h-14 flex items-center justify-center bg-white border border-slate-200 rounded-2xl hover:bg-green-50 hover:text-green-600 font-bold text-slate-600 shadow-sm transition"><Plus size={20} /></button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between p-6">
+                            <div className="flex flex-col">
+                              <span className="text-5xl font-bold text-slate-800 tracking-tight">{selectedItem.quantity}</span>
+                              <span className="text-xs font-bold text-slate-400 uppercase mt-1">Units Available</span>
+                            </div>
+                            <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${selectedItem.quantity <= selectedItem.threshold ? 'bg-red-100 text-red-700 border-red-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
+                              <div className={`w-2.5 h-2.5 rounded-full ${selectedItem.quantity <= selectedItem.threshold ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+                              <span className="text-xs font-bold uppercase tracking-wide">{selectedItem.quantity <= selectedItem.threshold ? 'Low Stock' : 'In Stock'}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                   </div>
+
+                   <div>
+                     <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Description</h4>
+                     {isEditing ? <textarea className="w-full p-4 border border-slate-200 rounded-xl h-32 bg-slate-50 focus:bg-white transition" value={selectedItem.description} onChange={e => setSelectedItem({...selectedItem, description: e.target.value})} /> : <p className="text-slate-600 text-sm leading-relaxed">{selectedItem.description || "No description."}</p>}
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-6">
+                       <div>
+                         <h4 className="text-xs font-bold text-slate-400 uppercase mb-1">Location</h4>
+                         {isEditing ? <input className="w-full border-b py-1 border-slate-300 focus:border-red-500 outline-none bg-transparent" value={selectedItem.location} onChange={e => setSelectedItem({...selectedItem, location: e.target.value})}/> : <p className="font-bold text-slate-800">{selectedItem.location}</p>}
+                       </div>
+                       <div>
+                         <h4 className="text-xs font-bold text-slate-400 uppercase mb-1">Low Stock Limit</h4>
+                         {isEditing ? <input type="number" className="w-full border-b py-1 border-slate-300 focus:border-red-500 outline-none bg-transparent" value={selectedItem.threshold} onChange={e => setSelectedItem({...selectedItem, threshold: parseInt(e.target.value)})}/> : <p className="font-bold text-red-500">{selectedItem.threshold} items</p>}
+                       </div>
+                   </div>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900">Welcome to LIKHA!</h2>
-                <p className="text-slate-500">Please complete your profile to continue.</p>
-              </div>
-
-              <form onSubmit={async (e) => {
-                e.preventDefault()
-                const formData = new FormData(e.target)
-                
-                const { error } = await supabase.from('profiles').update({
-                  first_name: formData.get('firstName'),
-                  last_name: formData.get('lastName'),
-                  sr_code: formData.get('srCode'),
-                  user_type: formData.get('userType')
-                }).eq('id', session.user.id)
-
-                if (!error) {
-                  refreshProfile() // Reloads profile to close modal
-                }
-              }} className="space-y-4">
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <input required name="firstName" placeholder="First Name" className="p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
-                  <input required name="lastName" placeholder="Last Name" className="p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                
-                <input name="srCode" placeholder="SR Code (e.g. 21-00000)" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
-                
-                <select name="userType" className="w-full p-3 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="Student Volunteer">Student Volunteer</option>
-                  <option value="Intern">Intern</option>
-                  <option value="Admin">Admin</option>
-                </select>
-
-                <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                  Complete Setup
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
+             </div>
+          )}
       </div>
+
+      {/* 5. MODALS (Add Item & Onboarding) */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl animate-scale-in">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-slate-900">Add New Material</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition"><X className="text-slate-400 hover:text-slate-600"/></button>
+            </div>
+            <form onSubmit={handleAddItem} className="space-y-5">
+              <div className="grid grid-cols-2 gap-5">
+                <input required placeholder="Item Name" className="p-4 border border-slate-200 rounded-xl col-span-2 focus:ring-2 focus:ring-red-500 outline-none font-medium" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
+                <select className="p-4 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-red-500 outline-none" value={newItem.cat} onChange={e => setNewItem({...newItem, cat: e.target.value})}><option>Consumable</option><option>Tool</option><option>Equipment</option><option>Miscellaneous</option></select>
+                <input type="number" placeholder="Initial Qty" className="p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: parseInt(e.target.value)})} />
+                <input placeholder="Location" className="p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" value={newItem.loc} onChange={e => setNewItem({...newItem, loc: e.target.value})} />
+                <div className="col-span-2">
+                  <textarea placeholder="Item Description..." className="w-full p-4 border border-slate-200 rounded-xl h-24 focus:ring-2 focus:ring-red-500 outline-none" value={newItem.desc} onChange={e => setNewItem({...newItem, desc: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Color Code</label>
+                  <div className="flex gap-3">
+                    {COLORS.map(c => <div key={c} onClick={() => setNewItem({...newItem, color: c})} className={`w-8 h-8 rounded-full cursor-pointer ring-2 ring-offset-2 transition-all ${newItem.color === c ? 'ring-slate-400 scale-110' : 'ring-transparent'}`} style={{backgroundColor: c}}></div>)}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Low Stock Limit</label>
+                  <input type="number" className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" value={newItem.threshold} onChange={e => setNewItem({...newItem, threshold: parseInt(e.target.value)})} />
+                </div>
+                 <div className="col-span-2">
+                  <input placeholder="Image URL (Optional)" className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" value={newItem.img} onChange={e => setNewItem({...newItem, img: e.target.value})} />
+                </div>
+              </div>
+              <button className="w-full bg-red-600 text-white py-4 rounded-xl font-bold hover:bg-red-700 mt-4 shadow-lg shadow-red-200 transition active:scale-[0.98]">Save to Inventory</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isOnboarding && (
+        <div className="fixed inset-0 bg-slate-900/90 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-scale-in">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
+                <User size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900">Welcome to LIKHA!</h2>
+              <p className="text-slate-500 mt-2">Please complete your profile.</p>
+            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault(); const formData = new FormData(e.target);
+              const { error } = await supabase.from('profiles').update({ first_name: formData.get('firstName'), last_name: formData.get('lastName'), sr_code: formData.get('srCode'), user_type: formData.get('userType') }).eq('id', session.user.id);
+              if (!error) refreshProfile();
+            }} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <input required name="firstName" placeholder="First Name" className="p-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-500 outline-none" />
+                <input required name="lastName" placeholder="Last Name" className="p-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-500 outline-none" />
+              </div>
+              <input name="srCode" placeholder="SR Code" className="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-500 outline-none" />
+              <select name="userType" className="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-500 outline-none">
+                <option value="Student Volunteer">Student Volunteer</option><option value="Intern">Intern</option><option value="Admin">Admin</option>
+              </select>
+              <button className="w-full bg-red-600 text-white py-4 rounded-xl font-bold hover:bg-red-700 transition shadow-lg shadow-red-200 active:scale-[0.98]">Complete Setup</button>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
