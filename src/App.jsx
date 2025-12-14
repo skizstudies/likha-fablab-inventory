@@ -110,6 +110,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false) // Dropdown state
   const [isEditing, setIsEditing] = useState(false) // Side panel edit state
   const [isOnboarding, setIsOnboarding] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   
   // New Item State
   const [newItem, setNewItem] = useState({ name: '', cat: 'Consumable', qty: 0, loc: '', desc: '', color: '#3b82f6', tags: '', threshold: 5, img: '' })
@@ -160,36 +161,53 @@ function MainApp({ session, userProfile, refreshProfile }) {
   // --- ACTIONS ---
   async function handleAddItem(e) {
     e.preventDefault()
-    // Convert comma tags to array
-    const tagArray = newItem.tags.split(',').map(t => t.trim())
-    
-    const { data, error } = await supabase.from('inventory').insert([{ 
-      item_name: newItem.name, 
-      category: newItem.cat, 
-      quantity: newItem.qty, 
-      location: newItem.loc,
-      description: newItem.desc, 
-      color_code: newItem.color, 
-      tags: tagArray, 
-      threshold: newItem.threshold, 
-      image_url: newItem.img
-    }]).select()
+    setIsSaving(true)
 
-    if (!error) {
-      // 1. Log the initial stock
-      await logTransaction(data[0].id, newItem.qty, 'Initial Stock')
+    try {
+      // 1. CLEAN THE DATA (The "Sanitization" Step)
+      // If the user types nothing, we force it to be 0 or an empty array.
       
-      // 2. Close the modal
+      const safeQty = parseInt(newItem.qty) || 0
+      const safeThreshold = parseInt(newItem.threshold) || 5
+      
+      // Handle tags: If empty, send [], otherwise split by comma
+      const safeTags = newItem.tags 
+        ? newItem.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+        : []
+
+      // 2. CREATE THE PAYLOAD
+      const itemPayload = { 
+        item_name: newItem.name || 'Untitled Item', // Fallback name
+        category: newItem.cat, 
+        quantity: safeQty, 
+        location: newItem.loc || '',
+        description: newItem.desc || '', 
+        color_code: newItem.color, 
+        tags: safeTags, 
+        threshold: safeThreshold, 
+        image_url: newItem.img || null // Send null if empty, not ""
+      }
+
+      console.log("Sending to Supabase:", itemPayload) // <--- Check Console if it fails again!
+
+      // 3. SEND TO DATABASE
+      const { data, error } = await supabase.from('inventory').insert([itemPayload]).select()
+  
+      if (error) throw error
+
+      // 4. SUCCESS!
+      await logTransaction(data[0].id, safeQty, 'Initial Stock')
       setIsModalOpen(false)
-      
-      // 3. REFRESH the table
       fetchData()
-
-      // 4. RESET THE FORM (The Magic Line) ✨
-      setNewItem({ 
-        name: '', cat: 'Consumable', qty: 0, loc: '', 
-        desc: '', color: '#3b82f6', tags: '', threshold: 5, img: '' 
-      })
+      
+      // 5. RESET FORM
+      setNewItem({ name: '', cat: 'Consumable', qty: 0, loc: '', desc: '', color: '#3b82f6', tags: '', threshold: 5, img: '' })
+      
+    } catch (error) {
+      alert("Database Error: " + error.message)
+      console.error("Full Error Details:", error)
+    } finally {
+      setIsSaving(false)
     }
   }
 
