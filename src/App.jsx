@@ -426,7 +426,7 @@ function MainApp({ session, userProfile, refreshProfile }) {
                             </td>
                             <td className="p-4 text-center"><span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600">{item.category}</span></td>
                             <td className="p-4 text-center">
-                              <span className={`font-mono font-bold text-lg ${item.quantity === 0 ? 'text-red-500' : 'text-slate-700'}`}>{item.quantity}</span>
+                              <span className={`font-bold text-lg ${item.quantity === 0 ? 'text-red-500' : 'text-slate-700'}`}>{item.quantity}</span>
                             </td>
                             <td className="p-4 text-center text-sm text-slate-500">{item.location}</td>
                             <td className="p-4 text-center">
@@ -483,46 +483,61 @@ function MainApp({ session, userProfile, refreshProfile }) {
                       )}
                     </div>
 
-                    <div className="p-5 bg-slate-50 rounded-xl border border-slate-100 transition-all">
-                      <label className="text-xs font-bold text-slate-400 uppercase block mb-3">
+                    <div className="mb-8">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                         {isEditing ? "Adjust Stock Level" : "Current Stock"}
-                      </label>
+                      </h3>
                       
-                      {isEditing ? (
-                        <div className="flex items-center gap-3 animate-fade-in">
-                          {/* MINUS BUTTON: Only updates local state */}
-                          <button 
-                            onClick={() => setSelectedItem({...selectedItem, quantity: Math.max(0, selectedItem.quantity - 1)})} 
-                            className="w-12 h-12 bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:text-red-600 font-bold text-slate-600 shadow-sm transition"
-                          >
-                            -
-                          </button>
-                          
-                          {/* INPUT: Only updates local state */}
-                          <input 
-                            type="number" 
-                            value={selectedItem.quantity} 
-                            onChange={(e) => setSelectedItem({...selectedItem, quantity: parseInt(e.target.value) || 0})}
-                            className="flex-1 text-center py-3 border border-slate-200 rounded-xl font-mono font-bold text-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                          />
-                          
-                          {/* PLUS BUTTON: Only updates local state */}
-                          <button 
-                            onClick={() => setSelectedItem({...selectedItem, quantity: selectedItem.quantity + 1})} 
-                            className="w-12 h-12 bg-white border border-slate-200 rounded-xl hover:bg-green-50 hover:text-green-600 font-bold text-slate-600 shadow-sm transition"
-                          >
-                            +
-                          </button>
-                        </div>
-                      ) : (
-                        /* ... View Mode stays the same ... */
-                        <div className="flex items-baseline gap-2">
-                            <span className={`text-4xl font-mono font-bold tracking-tight ${selectedItem.quantity <= selectedItem.threshold ? 'text-red-500' : 'text-slate-800'}`}>
-                              {selectedItem.quantity}
-                            </span>
-                            <span className="text-sm font-bold text-slate-400 uppercase">Units Available</span>
-                        </div>
-                      )}
+                      <div className={`p-1 rounded-2xl border ${isEditing ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 bg-slate-50'}`}>
+                        {isEditing ? (
+                          // EDIT MODE: Big Buttons
+                          <div className="flex items-center gap-2 p-1">
+                            <button 
+                              onClick={() => setSelectedItem({...selectedItem, quantity: Math.max(0, selectedItem.quantity - 1)})} 
+                              className="w-14 h-14 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold text-slate-600 shadow-sm transition active:scale-95"
+                            >
+                              <Minus size={20} />
+                            </button>
+                            
+                            <input 
+                              type="number" 
+                              value={selectedItem.quantity} 
+                              onChange={(e) => setSelectedItem({...selectedItem, quantity: parseInt(e.target.value) || 0})}
+                              className="flex-1 h-14 text-center border border-slate-200 rounded-xl font-bold text-2xl outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-inner"
+                            />
+                            
+                            <button 
+                              onClick={() => setSelectedItem({...selectedItem, quantity: selectedItem.quantity + 1})} 
+                              className="w-14 h-14 flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-green-50 hover:text-green-600 hover:border-green-200 font-bold text-slate-600 shadow-sm transition active:scale-95"
+                            >
+                              <Plus size={20} />
+                            </button>
+                          </div>
+                        ) : (
+                          // VIEW MODE: Stat Card with Badge
+                          <div className="flex items-center justify-between p-4">
+                            <div className="flex flex-col">
+                              <span className="text-4xl font-bold text-slate-800 tracking-tight">
+                                {selectedItem.quantity}
+                              </span>
+                              <span className="text-xs font-bold text-slate-400 uppercase">Units Available</span>
+                            </div>
+
+                            <div className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
+                              selectedItem.quantity <= selectedItem.threshold 
+                                ? 'bg-red-100 text-red-700 border-red-200' 
+                                : 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${
+                                selectedItem.quantity <= selectedItem.threshold ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'
+                              }`} />
+                              <span className="text-xs font-bold uppercase tracking-wide">
+                                {selectedItem.quantity <= selectedItem.threshold ? 'Low Stock' : 'In Stock'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div>
