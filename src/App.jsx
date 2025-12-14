@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { 
   Plus, Trash2, LogOut, User, LayoutGrid, Search, X, 
   ChevronRight, Edit3, Save, MoreVertical, Settings, AlertTriangle, ArrowLeft,
-  Camera, Loader2 
+  Camera, Loader2, ChevronDown
 } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
@@ -319,14 +319,14 @@ function MainApp({ session, userProfile, refreshProfile }) {
           <button onClick={() => {setView('reports'); setSelectedItem(null)}} className={`px-6 py-2 rounded-md text-sm font-bold transition ${view === 'reports' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>Reports</button>
         </div>
 
-        {/* PROFILE DROPDOWN */}
+      {/* User Profile Section */}
         <div className="relative">
-          <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-3 hover:bg-slate-50 p-2 rounded-lg transition">
-            <div className="text-right hidden md:block">
-              <div className="text-sm font-bold text-slate-700">{userProfile?.first_name}</div>
-              <div className="text-xs text-slate-500 uppercase">{userProfile?.user_type}</div>
-            </div>
-            {/* Replace the old circle div with this one: */}
+            
+          {/* 1. The Profile Button */}
+          <button 
+            onClick={() => setIsProfileOpen(!isProfileOpen)} 
+            className="flex items-center gap-3 hover:bg-slate-100 p-2 rounded-xl transition"
+            >
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm overflow-hidden">
               {userProfile?.avatar_url ? (
                 <img src={userProfile.avatar_url} className="w-full h-full object-cover" />
@@ -334,19 +334,48 @@ function MainApp({ session, userProfile, refreshProfile }) {
                 userProfile?.first_name?.[0] || <User size={18}/>
               )}
             </div>
-          </button>
-          
-          {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 animate-fade-in z-50">
-              <div className="px-4 py-2 border-b border-slate-50 mb-1">
-                <p className="text-xs font-bold text-slate-400 uppercase">Signed in as</p>
-                <p className="text-sm font-bold text-slate-700 truncate">{session.user.email}</p>
-              </div>
-              <button onClick={() => {setView('profile'); setIsProfileOpen(false)}} className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"><Settings size={16}/> Profile Settings</button>
-              <button onClick={() => supabase.auth.signOut()} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16}/> Sign Out</button>
+              
+            <div className="text-left hidden md:block">
+              <p className="text-sm font-bold text-slate-700">{userProfile?.first_name || 'User'}</p>
+              <p className="text-xs text-slate-500 capitalize">{userProfile?.user_type || 'Student'}</p>
             </div>
+            <ChevronDown size={16} className={`text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`}/>
+          </button>
+
+          {/* 2. The Dropdown Logic */}
+          {isProfileOpen && (
+            <>
+              {/* A. INVISIBLE BACKDROP (Clicking this closes the menu) */}
+              <div 
+                className="fixed inset-0 z-10 cursor-default" 
+                onClick={() => setIsProfileOpen(false)}
+              ></div>
+
+              {/* B. THE MENU (Sits on top of the backdrop) */}
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-20 animate-fade-in-down origin-top-right">
+                
+                <div className="px-4 py-3 border-b border-slate-100 mb-2">
+                  <p className="text-sm font-bold text-slate-900">Signed in as</p>
+                  <p className="text-xs text-slate-500 truncate">{session.user.email}</p>
+                </div>
+
+                <button 
+                  onClick={() => { setView('profile'); setIsProfileOpen(false) }}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 font-medium transition flex items-center gap-2"
+                >
+                  <Settings size={16} /> Profile Settings
+                </button>
+                
+                <button 
+                  onClick={async () => { await supabase.auth.signOut(); window.location.reload() }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium transition flex items-center gap-2"
+                >
+                  <LogOut size={16} /> Sign Out
+                </button>
+              </div>
+            </>
           )}
-        </div>
+        </div>      
       </div>
 
       {/* CONTENT */}
